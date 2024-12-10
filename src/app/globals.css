@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Override Prism.js theme styles */
+pre[class*="language-"],
+code[class*="language-"] {
+  text-shadow: none !important;
+  background: none !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  tab-size: 2 !important;
+}
+
+/* Water text effect */
+.water-char {
+  --water-intensity: 0;
+  --water-angle: 0;
+  transform: translate(0, 0);
+  transition: all 0.2s ease-out;
+  display: inline-block;
+}
+
+.group:hover .water-char {
+  color: hsl(var(--primary));
+}
+
+.group:hover .water-char:hover {
+  transform: translate(
+    calc(var(--water-intensity) * 10px * cos(var(--water-angle))),
+    calc(var(--water-intensity) * 10px * sin(var(--water-angle)))
+  );
+}
+
+@layer base {
+  :root {
+    /* Base colors with refined neutrals - Enhanced contrast */
+    --background: 35 30% 98%; /* Warm white */
+    --background-secondary: 35 25% 92%; /* Darker soft warm gray for better contrast */
+    --foreground: 35 25% 10%; /* Even darker warm gray for maximum contrast */
+    --foreground-secondary: 35 15% 25%; /* Darker medium warm gray */
+    --border: 35 20% 75%; /* Higher contrast border */
+    --border-secondary: 35 20% 70%; /* Higher contrast secondary border */
+
+    /* Brand colors - warm terra with increased contrast */
+    --brand: 28 60% 45%;
+
+    /* Primary colors - high contrast warm brown */
+    --primary: 28 75% 35%;
+    --primary-foreground: 35 30% 98%;
+
+    /* Accent colors - high contrast soft purple */
+    --accent: 250 65% 45%;
+    --accent-foreground: 35 30% 98%;
+
+    /* Secondary colors - high contrast muted terra */
+    --secondary: 28 55% 40%;
+    --secondary-foreground: 35 30% 98%;
+
+    /* Success colors - high contrast muted sage */
+    --success: 145 55% 35%;
+    --success-foreground: 35 30% 98%;
+
+    /* Warning colors - high contrast warm amber */
+    --warning: 35 90% 45%;
+    --warning-foreground: 35 25% 10%;
+
+    /* Error colors - high contrast muted coral */
+    --error: 0 75% 40%;
+    --error-foreground: 35 30% 98%;
+
+    /* Surface colors with increased contrast */
+    --surface: 35 30% 98%;
+    --surface-foreground: 35 25% 10%;
+
+    /* Border radius */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode with enhanced contrast */
+    --background: 28 25% 8%;
+    --background-secondary: 28 25% 12%;
+    --foreground: 35 15% 98%;
+    --foreground-secondary: 35 15% 90%;
+    --border: 28 20% 30%;
+    --border-secondary: 28 20% 35%;
+
+    --brand: 28 60% 70%;
+
+    /* Dark mode colors with enhanced contrast */
+    --primary: 28 65% 75%;
+    --primary-foreground: 28 25% 8%;
+
+    --accent: 250 55% 75%;
+    --accent-foreground: 28 25% 8%;
+
+    --secondary: 28 55% 70%;
+    --secondary-foreground: 28 25% 8%;
+
+    --success: 145 55% 60%;
+    --success-foreground: 28 25% 8%;
+
+    --warning: 35 90% 70%;
+    --warning-foreground: 28 25% 8%;
+
+    --error: 0 65% 70%;
+    --error-foreground: 28 25% 8%;
+
+    --surface: 28 25% 8%;
+    --surface-foreground: 35 15% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/70 ring-offset-2;
+  }
+
+  ::-webkit-scrollbar {
+    @apply h-2 w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-foreground/25 transition-colors hover:bg-foreground/35;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply border border-border/50 bg-background/95 shadow-lg backdrop-blur-md backdrop-saturate-150;
+  }
+
+  .glass-hover {
+    @apply transition-all duration-200 hover:border-border/70 hover:bg-background/98 hover:shadow-xl;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent;
+  }
+
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .animate-shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .animate-shimmer::after {
+    @apply absolute inset-0 -translate-x-full;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(212, 163, 115, 0.15) 20%,
+      rgba(212, 163, 115, 0.20) 60%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite;
+    content: "";
+  }
+
+  .animate-gradient {
+    animation: gradient 15s ease infinite;
+    background-size: 200% 200%;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@layer components {
+  .input-range {
+    @apply h-2 w-full cursor-pointer appearance-none rounded-lg bg-background-secondary;
+  }
+
+  .input-range::-webkit-slider-thumb {
+    @apply h-4 w-4 appearance-none rounded-full bg-primary;
+    @apply hover:bg-primary/90 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+  }
+
+  .input-range::-moz-range-thumb {
+    @apply h-4 w-4 appearance-none rounded-full border-0 bg-primary;
+    @apply hover:bg-primary/90 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/95;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/95;
+  }
+
+  .btn-ghost {
+    @apply text-foreground hover:bg-background-secondary/80;
+  }
+}
+
+@keyframes progress-stripe {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.progress-striped {
+  background-image: linear-gradient(
+    45deg,
+    rgba(212, 163, 115, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(212, 163, 115, 0.25) 50%,
+    rgba(212, 163, 115, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+}
