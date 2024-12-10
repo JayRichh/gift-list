@@ -1,118 +1,114 @@
-import Link from "next/link";
+"use client";
 
-import { Badge } from "~/components/ui/Badge";
-import { Button } from "~/components/ui/Button";
-import { Card, CardContent } from "~/components/ui/Card";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { GiftIcon, ArrowRight } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { Text } from "~/components/ui/Text";
+import { Button } from "~/components/ui/Button";
+import { FirstTimeSetup } from "~/components/FirstTimeSetup";
+import type { BudgetPreference } from "~/types/gift-list";
+
+const STORAGE_KEYS = {
+  SETUP_COMPLETED: 'hasCompletedSetup',
+  BUDGET_PREFERENCES: 'budgetPreferences',
+};
 
 export default function HomePage() {
+  const router = useRouter();
+  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
+  const [hasCompletedSetup, setHasCompletedSetup] = useState(false);
+
+  useEffect(() => {
+    const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
+    setHasCompletedSetup(!!setupCompleted);
+  }, []);
+
+  const handleSetupComplete = (preferences: BudgetPreference) => {
+    localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+    localStorage.setItem(STORAGE_KEYS.BUDGET_PREFERENCES, JSON.stringify(preferences));
+    router.push('/groups');
+  };
+
   return (
-    <Container>
-      <div className="relative py-20 space-y-12">
-        {/* Hero section */}
-        <div className="space-y-6 text-center">
-          <Text variant="h1" className="max-w-3xl mx-auto text-foreground">
-            Next.js Template with TypeScript and Three.js
-          </Text>
-          <Text variant="body-lg" className="text-foreground-secondary max-w-2xl mx-auto">
-            A modern, performant template featuring Next.js 14, TypeScript, Tailwind CSS, Framer
-            Motion, and Three.js. Built with best practices and latest features for optimal
-            development experience.
-          </Text>
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <Link href="/examples/ui">
-              <Button variant="primary" size="lg">
+    <>
+      <Container>
+        <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-8 max-w-2xl mx-auto"
+          >
+            <div className="flex justify-center">
+              <div className="p-4 rounded-full bg-primary/10">
+                <GiftIcon className="w-16 h-16 text-primary" />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <Text variant="h1" className="text-4xl sm:text-5xl font-bold">
+                Welcome to Gift List
+              </Text>
+              <Text className="text-foreground-secondary text-lg sm:text-xl">
+                Your personal gift management assistant. Keep track of gifts, budgets, and make every occasion special.
+              </Text>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => hasCompletedSetup ? router.push('/groups') : setShowFirstTimeSetup(true)}
+                className="gap-2 text-lg px-8 py-6"
+              >
                 Get Started
+                <ArrowRight className="w-5 h-5" />
               </Button>
-            </Link>
-            <Link href="/examples">
-              <Button variant="secondary" size="lg">
-                View Examples
-              </Button>
-            </Link>
-          </div>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto w-full"
+          >
+            {[
+              {
+                title: "Organize Groups",
+                description: "Create gift groups for different occasions and events"
+              },
+              {
+                title: "Track Budgets",
+                description: "Set and monitor budgets for individuals or groups"
+              },
+              {
+                title: "Smart Analytics",
+                description: "Get insights into your gift-giving patterns"
+              }
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="text-center p-6 rounded-xl bg-background-secondary/50 border border-border/50"
+              >
+                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                <p className="text-foreground-secondary">{feature.description}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
+      </Container>
 
-        {/* Tech versions */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Badge variant="secondary" size="md">
-            Next.js 15.0.3
-          </Badge>
-          <Badge variant="secondary" size="md">
-            React 18.2.0
-          </Badge>
-          <Badge variant="secondary" size="md">
-            TypeScript 5
-          </Badge>
-          <Badge variant="secondary" size="md">
-            Three.js 0.170.0
-          </Badge>
-          <Badge variant="secondary" size="md">
-            Tailwind CSS 3.4.1
-          </Badge>
-          <Badge variant="secondary" size="md">
-            Framer Motion 11.11.17
-          </Badge>
-        </div>
-
-        {/* Features grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">Type-Safe</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Built with TypeScript for enhanced developer experience and code reliability.
-              </Text>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">Modern Stack</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Latest Next.js 14 features including server components, streaming, and more.
-              </Text>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">3D Ready</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Integrated Three.js setup for creating immersive 3D experiences on the web.
-              </Text>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">UI Components</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Reusable components built with Tailwind CSS and Framer Motion animations.
-              </Text>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">Dark Mode</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Built-in dark mode support with smooth transitions and system preference detection.
-              </Text>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <Text variant="h3">Best Practices</Text>
-              <Text variant="body" className="text-foreground-secondary">
-                Follows modern web development best practices and coding standards.
-              </Text>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </Container>
+      <FirstTimeSetup 
+        isOpen={showFirstTimeSetup} 
+        onComplete={handleSetupComplete}
+        onClose={() => setShowFirstTimeSetup(false)}
+      />
+    </>
   );
 }

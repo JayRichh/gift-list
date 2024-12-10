@@ -1,7 +1,6 @@
 "use client";
 
 import { HTMLMotionProps, motion } from "framer-motion";
-
 import { ReactNode, forwardRef } from "react";
 
 interface ContainerProps extends Omit<HTMLMotionProps<"div">, "children"> {
@@ -26,6 +25,9 @@ const containerSizes = {
   full: "max-w-full",
 };
 
+const defaultPadding = "px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10";
+const defaultGutter = "px-4 sm:px-6 lg:px-8";
+
 export const Container = forwardRef<HTMLDivElement, ContainerProps>(
   (
     {
@@ -43,35 +45,36 @@ export const Container = forwardRef<HTMLDivElement, ContainerProps>(
     },
     ref
   ) => {
-    // Animation variants for container
     const containerVariants = {
       hidden: { opacity: 0, y: 20 },
       visible: {
         opacity: 1,
         y: 0,
         transition: {
-          duration: 0.5,
+          duration: 0.4,
           ease: "easeOut",
         },
       },
     };
 
-    // Base container styles
     const containerStyles = `
       relative
       w-full
       ${maxWidth ? containerSizes[size] : ""}
-      ${gutter ? "px-4 sm:px-6 lg:px-8" : ""}
+      ${gutter && !noPadding ? defaultGutter : ""}
+      ${!noPadding ? defaultPadding : ""}
       ${centered ? "mx-auto" : ""}
       ${className}
     `;
 
-    // Glass effect styles
-    const glassStyles = `
+    const glassStyles = glass || glassDark ? `
+      rounded-xl
+      backdrop-blur-sm
       ${glass ? "glass" : ""}
       ${glassDark ? "dark:glass-dark" : ""}
       ${!noPadding ? "p-6 sm:p-8" : ""}
-    `;
+      overflow-hidden
+    ` : "";
 
     return (
       <motion.div
@@ -82,24 +85,12 @@ export const Container = forwardRef<HTMLDivElement, ContainerProps>(
         className={containerStyles}
         {...props}
       >
-        {/* Optional glass effect wrapper */}
         {glass || glassDark ? (
-          <div
-            className={`
-            rounded-xl
-            backdrop-blur-sm
-            ${glassStyles}
-            ${innerClassName}
-          `}
-          >
-            {/* Dynamic background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/0 dark:from-black/5 dark:to-black/0 rounded-xl" />
-
-            {/* Content with relative positioning */}
+          <div className={`${glassStyles} ${innerClassName}`}>
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/0 dark:from-black/5 dark:to-black/0 rounded-xl pointer-events-none" />
             <div className="relative z-10">{children}</div>
           </div>
         ) : (
-          // Regular content without glass effect
           <div className={innerClassName}>{children}</div>
         )}
       </motion.div>
