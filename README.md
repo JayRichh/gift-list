@@ -1,6 +1,6 @@
 # Gift List
 
-Your personal gift management assistant. Keep track of gifts, budgets, and make every occasion special.
+![image](https://github.com/user-attachments/assets/3a2a9751-db31-46e1-ac74-1571d66c400a)
 
 ## Core Features
 
@@ -27,6 +27,13 @@ Your personal gift management assistant. Keep track of gifts, budgets, and make 
 - Nivo Charts (@nivo/bar, @nivo/pie, @nivo/line)
 - Lucide Icons
 - Christmas Light/ Dark theme
+
+![image](https://github.com/user-attachments/assets/bdfeebc4-8566-4cb0-9b49-863aaf889b50)
+
+![image](https://github.com/user-attachments/assets/ebc42477-35b3-4632-8fb8-75a4f770fab4)
+
+![image](https://github.com/user-attachments/assets/d40135c1-610e-4668-831c-8cb453947d6d)
+
 
 ## Project Structure
 
