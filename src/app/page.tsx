@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { GiftIcon, ArrowRight } from "lucide-react";
+import { GiftIcon, ArrowRight, Users, Gift, PieChart } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { Text } from "~/components/ui/Text";
 import { Button } from "~/components/ui/Button";
@@ -25,7 +25,6 @@ export default function HomePage() {
     const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
     setHasCompletedSetup(!!setupCompleted);
     
-    // Show setup dialog if setup=true query param is present
     if (searchParams.get('setup') === 'true') {
       setShowFirstTimeSetup(true);
     }
@@ -40,23 +39,25 @@ export default function HomePage() {
   return (
     <>
       <Container>
-        <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-12">
+        <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-16 px-4 sm:px-6 lg:px-8">
+          
+          {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center space-y-8 max-w-2xl mx-auto"
           >
             <div className="flex justify-center">
-              <div className="p-4 rounded-full bg-primary/10">
-                <GiftIcon className="w-16 h-16 text-primary" />
+              <div className="p-6 rounded-full bg-primary/10 dark:bg-primaryDark/10">
+                <GiftIcon className="w-16 h-16 text-primary dark:text-primaryDark" />
               </div>
             </div>
             
             <div className="space-y-4">
-              <Text variant="h1" className="text-4xl sm:text-5xl font-bold">
+              <Text variant="h1" className="text-5xl sm:text-6xl font-extrabold text-gray-900 dark:text-white">
                 Welcome to Gift List
               </Text>
-              <Text className="text-foreground-secondary text-lg sm:text-xl">
+              <Text className="text-gray-600 dark:text-gray-300 text-lg sm:text-xl">
                 Your personal gift management assistant. Keep track of gifts, budgets, and make every occasion special.
               </Text>
             </div>
@@ -70,7 +71,7 @@ export default function HomePage() {
                 variant="primary"
                 size="lg"
                 onClick={() => hasCompletedSetup ? router.push('/groups') : setShowFirstTimeSetup(true)}
-                className="gap-2 text-lg px-8 py-6"
+                className="gap-2 text-lg px-8 py-4"
               >
                 Get Started
                 <ArrowRight className="w-5 h-5" />
@@ -78,38 +79,52 @@ export default function HomePage() {
             </motion.div>
           </motion.div>
 
+          {/* Features Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
             className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto w-full"
           >
+            {/* Feature Cards */}
             {[
               {
-                title: "Organize Groups",
-                description: "Create gift groups for different occasions and events"
+                step: "1",
+                icon: Users,
+                title: "Create Groups",
+                description: "Start by creating gift groups for occasions like birthdays or holidays."
               },
               {
-                title: "Track Budgets",
-                description: "Set and monitor budgets for individuals or groups"
+                step: "2",
+                icon: Gift,
+                title: "Track Gifts",
+                description: "Add gifts, set budgets, and update status from planned to delivered."
               },
               {
-                title: "Smart Analytics",
-                description: "Get insights into your gift-giving patterns"
+                step: "3",
+                icon: PieChart,
+                title: "Monitor Progress",
+                description: "View spending analytics and track gift-giving patterns."
               }
             ].map((feature, index) => (
               <div
                 key={index}
-                className="text-center p-6 rounded-xl bg-background-secondary/50 border border-border/50"
+                className="relative p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow group"
               >
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                <p className="text-foreground-secondary">{feature.description}</p>
+                <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-primary/10 dark:bg-primaryDark/10 border border-primary/20 dark:border-primaryDark/20 flex items-center justify-center text-sm font-medium text-primary dark:text-primaryDark">
+                  {feature.step}
+                </div>
+                <feature.icon className="w-10 h-10 mb-4 text-primary dark:text-primaryDark group-hover:text-primary/80 transition-colors" />
+                <h3 className="font-semibold text-xl mb-2 text-gray-800 dark:text-gray-100">{feature.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">{feature.description}</p>
               </div>
             ))}
           </motion.div>
+
         </div>
       </Container>
 
+      {/* First Time Setup Modal */}
       <FirstTimeSetup 
         isOpen={showFirstTimeSetup} 
         onComplete={handleSetupComplete}
