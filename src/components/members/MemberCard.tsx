@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Gift, Tag } from "lucide-react";
+import { Gift, Tag, DollarSign } from "lucide-react";
 import type { Member, Group } from "~/types/gift-list";
 import { Card, CardContent } from "~/components/ui/Card";
 import { Text } from "~/components/ui/Text";
@@ -15,6 +15,8 @@ interface MemberCardProps {
   group: Group;
   giftCount?: number;
   giftProgress?: number;
+  budgetSpent?: number;
+  budgetTotal?: number;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -24,9 +26,13 @@ export function MemberCard({
   group,
   giftCount = 0,
   giftProgress = 0,
+  budgetSpent = 0,
+  budgetTotal = 0,
   onEdit,
   onDelete,
 }: MemberCardProps) {
+  const budgetProgress = budgetTotal > 0 ? (budgetSpent / budgetTotal) * 100 : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -71,32 +77,62 @@ export function MemberCard({
             )}
           </div>
 
-          <div className="pt-3 mt-3 border-t border-border/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Gift className="w-4 h-4 text-primary/60" />
-                <Text className="text-sm">
-                  {giftCount} {giftCount === 1 ? "Gift" : "Gifts"}
-                </Text>
+          <div className="pt-3 mt-3 border-t border-border/50 space-y-3">
+            {/* Gift Progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Gift className="w-4 h-4 text-primary/60" />
+                  <Text className="text-sm">
+                    {giftCount} {giftCount === 1 ? "Gift" : "Gifts"}
+                  </Text>
+                </div>
+                {giftCount > 0 && (
+                  <Badge 
+                    variant="outline" 
+                    color={giftProgress === 100 ? "success" : "primary"}
+                    size="sm"
+                    className="h-5 inline-flex items-center text-xs"
+                  >
+                    {Math.round(giftProgress)}% Complete
+                  </Badge>
+                )}
               </div>
               {giftCount > 0 && (
-                <Badge 
-                  variant="outline" 
-                  color={giftProgress === 100 ? "success" : "primary"}
+                <Progress 
+                  value={giftProgress} 
                   size="sm"
-                  className="h-5 inline-flex items-center text-xs"
-                >
-                  {Math.round(giftProgress)}% Complete
-                </Badge>
+                  variant={giftProgress === 100 ? "default" : "gradient"}
+                />
               )}
             </div>
-            {giftCount > 0 && (
-              <Progress 
-                value={giftProgress} 
-                size="sm"
-                variant={giftProgress === 100 ? "default" : "gradient"}
-                className="mt-2"
-              />
+
+            {/* Budget Progress */}
+            {budgetTotal > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-4 h-4 text-primary/60" />
+                    <Text className="text-sm">
+                      ${budgetSpent.toFixed(2)} / ${budgetTotal.toFixed(2)}
+                    </Text>
+                  </div>
+                  <Badge 
+                    variant="outline" 
+                    color={budgetProgress > 100 ? "error" : budgetProgress === 100 ? "success" : "primary"}
+                    size="sm"
+                    className="h-5 inline-flex items-center text-xs"
+                  >
+                    {Math.round(budgetProgress)}% Used
+                  </Badge>
+                </div>
+                <Progress 
+                  value={Math.min(budgetProgress, 100)} 
+                  size="sm"
+                  variant={budgetProgress === 100 ? "default" : "gradient"}
+                  color={budgetProgress > 100 ? "error" : "primary"}
+                />
+              </div>
             )}
           </div>
         </CardContent>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { useGroups } from "~/hooks/gift-list";
+import { useGroups, useGifts, useAllMembers } from "~/hooks/gift-list";
 import { Container } from "~/components/ui/Container";
 import { Text } from "~/components/ui/Text";
 import { Button } from "~/components/ui/Button";
@@ -27,12 +27,44 @@ export default function GroupsPage() {
   
   const { 
     groups, 
-    loading, 
-    error, 
+    loading: groupsLoading, 
+    error: groupsError, 
     createGroup,
     updateGroup,
     deleteGroup,
   } = useGroups();
+
+  const { gifts, loading: giftsLoading } = useGifts();
+  const { members, loading: membersLoading } = useAllMembers();
+
+  // Calculate stats for each group
+  const groupStats = useMemo(() => {
+    const memberCounts: Record<string, number> = {};
+    const giftCounts: Record<string, number> = {};
+    const spentAmounts: Record<string, number> = {};
+
+    // Calculate member counts
+    members.forEach(member => {
+      memberCounts[member.groupId] = (memberCounts[member.groupId] || 0) + 1;
+    });
+
+    // Calculate gift counts and spent amounts
+    gifts.forEach(gift => {
+      // Find member's group
+      const member = members.find(m => m.id === gift.memberId);
+      if (member) {
+        const groupId = member.groupId;
+        giftCounts[groupId] = (giftCounts[groupId] || 0) + 1;
+        spentAmounts[groupId] = (spentAmounts[groupId] || 0) + gift.cost;
+      }
+    });
+
+    return {
+      memberCounts,
+      giftCounts,
+      spentAmounts,
+    };
+  }, [members, gifts]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type, isVisible: true });
@@ -115,6 +147,9 @@ export default function GroupsPage() {
     }
   };
 
+  const loading = groupsLoading || giftsLoading || membersLoading;
+  const error = groupsError;
+
   return (
     <>
       <Container>
@@ -177,6 +212,9 @@ export default function GroupsPage() {
             ) : (
               <GroupList
                 groups={groups}
+                memberCounts={groupStats.memberCounts}
+                giftCounts={groupStats.giftCounts}
+                spentAmounts={groupStats.spentAmounts}
                 onEditGroup={setEditingGroup}
                 onDeleteGroup={handleDeleteGroup}
               />
