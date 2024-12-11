@@ -113,7 +113,6 @@ export function BudgetChart({ data }: BudgetChartProps) {
                 { value: "members", label: "By Members" },
                 { value: "priceRanges", label: "By Price Range" },
               ]}
-              className="w-48"
             />
             <Text 
               className={`text-sm font-medium ${

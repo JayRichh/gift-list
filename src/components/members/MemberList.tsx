@@ -83,7 +83,6 @@ export function MemberList({
             value={progressFilter}
             onChange={value => setProgressFilter(value)}
             options={progressOptions}
-            className="w-40"
           />
         </div>
 

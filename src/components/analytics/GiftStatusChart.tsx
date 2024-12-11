@@ -264,7 +264,6 @@ export function GiftStatusChart({ data }: GiftStatusChartProps) {
                   { value: "priceRanges", label: "Price Ranges" },
                   { value: "monthly", label: "Monthly Spending" },
                 ]}
-                className="w-48"
               />
               <Text className="text-lg font-medium">{getViewTitle()}</Text>
             </div>
