@@ -1,27 +1,11 @@
 "use client";
 
 import { Suspense } from "react";
-import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
-
 import { Navigation } from "~/components/Navigation";
 import { Footer } from "~/components/Footer";
 import { GradientBackground } from "~/components/ui/GradientBackground";
 import { Spinner } from "~/components/ui/Spinner";
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  preload: true,
-  display: "swap",
-});
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  preload: true,
-  display: "swap",
-});
 
 function NavigationLoading() {
   return (
@@ -41,35 +25,33 @@ function MainContentLoading() {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable} h-full bg-background text-foreground font-sans antialiased min-h-full flex flex-col`}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        {/* Background gradient */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <GradientBackground variant="radial" />
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      {/* Background gradient */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <GradientBackground variant="radial" />
+      </div>
+
+      {/* Navigation */}
+      <Suspense fallback={<NavigationLoading />}>
+        <Navigation />
+      </Suspense>
+
+      {/* Main content */}
+      <main className="flex-1 pt-16 sm:pt-20 relative z-10">
+        <div className="min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)]">
+          <Suspense fallback={<MainContentLoading />}>{children}</Suspense>
         </div>
+      </main>
 
-        {/* Navigation */}
-        <Suspense fallback={<NavigationLoading />}>
-          <Navigation />
-        </Suspense>
-
-        {/* Main content */}
-        <main className="flex-1 pt-16 sm:pt-20 relative z-10">
-          <div className="min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)]">
-            <Suspense fallback={<MainContentLoading />}>{children}</Suspense>
-          </div>
-        </main>
-
-        {/* Footer */}
-        <div className="relative z-10 mt-auto">
-          <Footer />
-        </div>
-      </ThemeProvider>
-    </div>
+      {/* Footer */}
+      <div className="relative z-10 mt-auto">
+        <Footer />
+      </div>
+    </ThemeProvider>
   );
 }
