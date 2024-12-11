@@ -75,18 +75,18 @@ export function GiftList({
   const hasActiveFilters = statusFilter !== "all" || selectedTags.length > 0;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       {/* Filters */}
-      <div className="py-8 space-y-6 pt-12 pb-0">
+      <Card className="p-6 bg-background/80 backdrop-blur-sm">
         {/* Filter Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-0">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-primary" />
               <Text className="font-medium">Filters</Text>
             </div>
             {hasActiveFilters && (
-              <Badge variant="outline" size="sm">
+              <Badge variant="outline" size="sm" className="ml-2">
                 {filteredGifts.length} of {gifts.length}
               </Badge>
             )}
@@ -108,13 +108,15 @@ export function GiftList({
         )}>
           {/* Status and Clear Filters */}
           <div className="flex flex-col sm:flex-row items-start gap-4">
-            <Select
-              value={statusFilter}
-              onChange={value => setStatusFilter(value)}
-              options={statusOptions}
-              className="w-full sm:w-48"
-              placeholder="Filter by status"
-            />
+            <div className="w-full sm:w-48">
+              <Select
+                value={statusFilter}
+                onChange={value => setStatusFilter(value)}
+                options={statusOptions}
+                className="w-full"
+                placeholder="Filter by status"
+              />
+            </div>
 
             {hasActiveFilters && (
               <Button
@@ -135,7 +137,7 @@ export function GiftList({
               <Text className="text-sm font-medium text-foreground-secondary">
                 Filter by Tags
               </Text>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-w-2xl">
                 {allTags.map(tag => (
                   <button
                     key={tag}
@@ -154,7 +156,7 @@ export function GiftList({
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Gift Grid */}
       {filteredGifts.length > 0 ? (

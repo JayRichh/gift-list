@@ -10,6 +10,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Select } from "./Select";
+import { Text } from "./Text";
 import type { BudgetPreference } from "~/types/gift-list";
 import { usePlannedGifts } from "~/hooks/gift-list/usePlannedGifts";
 
@@ -193,17 +194,15 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
           variants={contentVariants}
           initial="hidden"
           animate={isOpen ? "visible" : "hidden"}
-          className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+          className="border-b border-border/50 px-6 py-4"
         >
           <div className="max-w-7xl w-full mx-auto flex items-center justify-between px-4 sm:px-8">
-            <motion.h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Menu
-            </motion.h2>
+            <Text className="text-3xl font-bold">Menu</Text>
             <Button
               variant="ghost"
               size="lg"
               onClick={onClose}
-              className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 p-3"
+              className="text-foreground hover:bg-background/95 p-3"
               aria-label="Close menu"
             >
               <X className="h-9 w-9" />
@@ -219,19 +218,19 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
         >
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
-              <div className="space-y-12">
+              <div className="space-y-8">
                 {!hasCompletedSetup && (
                   <motion.div
                     variants={itemVariants}
                     initial="hidden"
                     animate={isOpen ? "visible" : "hidden"}
-                    className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                    className="p-4 rounded-xl border-2 border-primary/20 bg-primary/5"
                   >
                     <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
+                      <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
                       <div className="space-y-2">
-                        <h3 className="font-medium text-blue-900 dark:text-blue-100">Setup Required</h3>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Complete the first-time setup to access all features.</p>
+                        <Text className="font-medium">Setup Required</Text>
+                        <Text className="text-sm text-foreground/60">Complete the first-time setup to access all features.</Text>
                         <Button
                           variant="primary"
                           onClick={handleSetupClick}
@@ -244,11 +243,9 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                   </motion.div>
                 )}
 
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Navigation
-                  </h3>
-                  <div className="space-y-4">
+                <div className="space-y-6">
+                  <Text className="text-lg font-medium">Navigation</Text>
+                  <div className="grid gap-4">
                     {mainLinks.map((item, index) => {
                       const isActive = pathname === item.path;
                       const Icon = item.icon;
@@ -261,19 +258,20 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                           initial="hidden"
                           animate={isOpen ? "visible" : "hidden"}
                           transition={{ delay: 0.4 + index * 0.1 }}
-                          whileHover={{ x: 4, transition: { duration: 0.2 } }}
                         >
                           <button
                             onClick={() => handleNavigation(item.path)}
                             className={cn(
-                              "flex items-center gap-3 text-lg font-medium transition-colors duration-300 w-full text-left",
+                              "w-full p-4 rounded-xl border-2 text-left transition-all",
                               isActive 
-                                ? "text-blue-500 dark:text-blue-400" 
-                                : "text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
+                                ? "border-primary bg-primary/5" 
+                                : "border-border/50 bg-background/95 hover:border-primary/50"
                             )}
                           >
-                            <Icon className="h-5 w-5" />
-                            {item.label}
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-5 w-5" />
+                              <Text className="font-medium">{item.label}</Text>
+                            </div>
                           </button>
                         </motion.div>
                       );
@@ -281,18 +279,13 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                   </div>
                 </div>
 
-                {hasCompletedSetup && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                {hasCompletedSetup && plannedGifts.length > 0 && (
+                  <div className="space-y-6">
+                    <Text className="text-lg font-medium flex items-center gap-2">
                       <ShoppingCart className="h-5 w-5" />
                       To Buy
-                    </h3>
-                    <div className="space-y-4">
-                      {!giftsLoading && plannedGifts.length === 0 && (
-                        <p className="text-gray-500 dark:text-gray-400 italic">
-                          No planned gifts yet
-                        </p>
-                      )}
+                    </Text>
+                    <div className="grid gap-4">
                       {plannedGifts.map((gift, index) => (
                         <motion.div
                           key={gift.id}
@@ -301,20 +294,16 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                           initial="hidden"
                           animate={isOpen ? "visible" : "hidden"}
                           transition={{ delay: 0.4 + index * 0.1 }}
-                          className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                          className="p-4 rounded-xl border-2 border-border/50 bg-background/95"
                         >
                           <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-gray-900 dark:text-white">
-                                {gift.name}
-                              </h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                ${gift.cost.toFixed(2)}
-                              </p>
+                            <div className="space-y-1">
+                              <Text className="font-medium">{gift.name}</Text>
+                              <Text className="text-sm text-foreground/60">${gift.cost.toFixed(2)}</Text>
                             </div>
                             {gift.priority && (
                               <span className={cn(
-                                "px-2 py-1 text-xs rounded-full",
+                                "px-3 py-1 rounded-full text-sm",
                                 gift.priority === 1 ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
                                 gift.priority === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" :
                                 "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
@@ -330,120 +319,132 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                 )}
               </div>
 
-              <div className="space-y-12">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
-                    Settings
-                  </h3>
-                  <div className="space-y-8">
-                    {/* Theme Settings */}
-                    <div>
-                      <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-                        Theme
-                      </h4>
-                      <div className="flex flex-wrap gap-3">
-                        {themeOptions.map(({ label, value, icon: Icon }, index) => (
-                          <motion.button
-                            key={value}
-                            custom={index}
-                            variants={itemVariants}
-                            initial="hidden"
-                            animate={isOpen ? "visible" : "hidden"}
-                            transition={{ delay: 0.6 + index * 0.1 }}
-                            whileHover={{ scale: 1.05 }}
-                            onClick={() => setTheme(value)}
-                            className={cn(
-                              "flex items-center gap-2 px-4 py-2 rounded-md text-base font-medium transition-colors duration-200",
-                              theme === value
-                                ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                            )}
-                          >
+              <div className="space-y-8">
+                <Text className="text-lg font-medium">Settings</Text>
+                <div className="space-y-6">
+                  <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+                    <Text className="font-medium">Theme</Text>
+                    <div className="grid grid-cols-3 gap-4">
+                      {themeOptions.map(({ label, value, icon: Icon }, index) => (
+                        <motion.button
+                          key={value}
+                          custom={index}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate={isOpen ? "visible" : "hidden"}
+                          transition={{ delay: 0.6 + index * 0.1 }}
+                          onClick={() => setTheme(value)}
+                          className={cn(
+                            "p-4 rounded-xl border-2 transition-all",
+                            theme === value
+                              ? "border-primary bg-primary/5"
+                              : "border-border/50 bg-background/95 hover:border-primary/50"
+                          )}
+                        >
+                          <div className="flex flex-col items-center gap-2">
                             <Icon className="h-5 w-5" />
-                            {label}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Budget Settings */}
-                    {budgetPrefs && (
-                      <div>
-                        <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-                          Budget Preferences
-                        </h4>
-                        <div className="space-y-6">
-                          <div className="space-y-3">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Default Budget
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <DollarSign className="h-5 w-5 text-gray-400" />
-                              </div>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={budgetPrefs.defaultBudget || ""}
-                                onChange={(e) => updateBudgetPreferences({ defaultBudget: parseFloat(e.target.value) })}
-                                placeholder="Enter default budget"
-                                className="pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800"
-                              />
-                            </div>
+                            <Text className="text-sm font-medium">{label}</Text>
                           </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
 
-                          <div className="space-y-3">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Budget Tracking Level
-                            </label>
-                            <Select
-                              value={budgetPrefs.trackingLevel}
-                              onChange={(value) => updateBudgetPreferences({ trackingLevel: value as BudgetPreference["trackingLevel"] })}
-                              options={[
-                                { value: "group", label: "Track at Group Level" },
-                                { value: "member", label: "Track at Member Level" },
-                                { value: "both", label: "Track at Both Levels" },
-                              ]}
-                              className="w-full"
+                  {budgetPrefs && (
+                    <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+                      <Text className="font-medium">Budget Preferences</Text>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Text className="text-sm text-foreground/60">Default Budget</Text>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <DollarSign className="h-5 w-5 text-primary/60" />
+                            </div>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={budgetPrefs.defaultBudget || ""}
+                              onChange={(e) => updateBudgetPreferences({ defaultBudget: parseFloat(e.target.value) })}
+                              placeholder="Enter default budget"
+                              className={cn(
+                                "pl-11 w-full h-12 rounded-xl",
+                                "bg-background/95",
+                                "border-2 border-border/50",
+                                "focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
+                                "placeholder:text-foreground/40"
+                              )}
                             />
                           </div>
+                        </div>
 
-                          <div className="space-y-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={budgetPrefs.enableAnalytics}
-                                onChange={(e) => updateBudgetPreferences({ enableAnalytics: e.target.checked })}
-                                className="sr-only peer"
-                              />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                              <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Enable Analytics
-                              </span>
-                            </label>
+                        <div className="space-y-2">
+                          <Text className="text-sm text-foreground/60">Budget Tracking Level</Text>
+                          <div className="grid grid-cols-3 gap-4">
+                            {[
+                              { value: "group", label: "Group", description: "Track per group" },
+                              { value: "member", label: "Member", description: "Track per person" },
+                              { value: "both", label: "Combined", description: "Track both" }
+                            ].map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => updateBudgetPreferences({ trackingLevel: option.value as BudgetPreference["trackingLevel"] })}
+                                className={cn(
+                                  "p-4 rounded-xl border-2 text-left relative",
+                                  budgetPrefs.trackingLevel === option.value
+                                    ? "border-primary bg-primary/5"
+                                    : "border-border/50 bg-background/95 hover:border-primary/50"
+                                )}
+                              >
+                                <div className="space-y-1">
+                                  <Text className="text-sm font-medium">{option.label}</Text>
+                                  <Text className="text-xs text-foreground/60">{option.description}</Text>
+                                </div>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                    )}
 
-                    {/* Reset Button */}
-                    <div>
-                      <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-                        Reset Application
-                      </h4>
-                      <Button
-                        variant="destructive"
-                        onClick={handleReset}
-                        className="w-full flex items-center justify-center gap-2"
-                      >
-                        <RefreshCw className="h-5 w-5" />
-                        Reset All Data
-                      </Button>
-                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        This will clear all your data and preferences, and return you to the setup screen.
-                      </p>
+                        <button
+                          onClick={() => updateBudgetPreferences({ enableAnalytics: !budgetPrefs.enableAnalytics })}
+                          className={cn(
+                            "w-full p-4 rounded-xl border-2 text-left",
+                            budgetPrefs.enableAnalytics ? "border-primary bg-primary/5" : "border-border/50 bg-background/95 hover:border-primary/50"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <Text className="font-medium">Enable Analytics</Text>
+                              <Text className="text-sm text-foreground/60">Get insights into your gift giving patterns</Text>
+                            </div>
+                            <div className={cn(
+                              "w-12 h-7 rounded-full transition-colors",
+                              budgetPrefs.enableAnalytics ? "bg-primary" : "bg-foreground/20"
+                            )}>
+                              <div className={cn(
+                                "w-5 h-5 rounded-full bg-white transform transition-transform m-1",
+                                budgetPrefs.enableAnalytics ? "translate-x-5" : "translate-x-0"
+                              )} />
+                            </div>
+                          </div>
+                        </button>
+                      </div>
                     </div>
+                  )}
+
+                  <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+                    <Text className="font-medium">Reset Application</Text>
+                    <Button
+                      variant="destructive"
+                      onClick={handleReset}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="h-5 w-5" />
+                      Reset All Data
+                    </Button>
+                    <Text className="text-sm text-foreground/60">
+                      This will clear all your data and preferences, and return you to the setup screen.
+                    </Text>
                   </div>
                 </div>
               </div>

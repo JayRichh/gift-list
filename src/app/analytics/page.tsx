@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
               <Text variant="h2" className="text-3xl font-bold">
                 Budget Overview
               </Text>
-              <div className="h-[500px]">
+              <div className="flex-1">
                 <BudgetChart data={budgetAnalytics} />
               </div>
             </div>
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
               <Text variant="h2" className="text-3xl font-bold">
                 Gift Status & Categories
               </Text>
-              <div className="h-[500px]">
+              <div className="h-[500px] w-full">
                 <GiftStatusChart data={giftAnalytics} />
               </div>
             </div>

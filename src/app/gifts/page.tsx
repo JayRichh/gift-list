@@ -7,10 +7,13 @@ import { Container } from "~/components/ui/Container";
 import { Text } from "~/components/ui/Text";
 import { Toast } from "~/components/ui/Toast";
 import { GiftList } from "~/components/gifts/GiftList";
+import { GiftForm } from "~/components/gifts/GiftForm";
+import { Modal } from "~/components/ui/Modal";
 import type { Gift } from "~/types/gift-list";
 
 export default function GiftsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -39,12 +42,17 @@ export default function GiftsPage() {
     }, 3000);
   };
 
-  const handleEditGift = async (gift: Gift) => {
-    if (isSubmitting) return;
+  const handleEditGift = (gift: Gift) => {
+    setEditingGift(gift);
+  };
+
+  const handleUpdateGift = async (data: any) => {
+    if (!editingGift || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await updateGift(editingGift.id, data);
       showToast("Gift updated successfully!", "success");
+      setEditingGift(null);
     } catch (error) {
       showToast("Failed to update gift", "error");
     } finally {
@@ -144,6 +152,21 @@ export default function GiftsPage() {
           />
         </motion.div>
       </Container>
+
+      {/* Edit Gift Modal */}
+      {editingGift && (
+        <Modal
+          isOpen={true}
+          onClose={() => setEditingGift(null)}
+          title="Edit Gift"
+        >
+          <GiftForm
+            gift={editingGift}
+            onSubmit={handleUpdateGift}
+            onCancel={() => setEditingGift(null)}
+          />
+        </Modal>
+      )}
 
       {/* Toast Notifications */}
       {toast && (
