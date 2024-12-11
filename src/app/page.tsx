@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { GiftIcon, ArrowRight } from "lucide-react";
 import { Container } from "~/components/ui/Container";
@@ -17,13 +17,19 @@ const STORAGE_KEYS = {
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
   const [hasCompletedSetup, setHasCompletedSetup] = useState(false);
 
   useEffect(() => {
     const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
     setHasCompletedSetup(!!setupCompleted);
-  }, []);
+    
+    // Show setup dialog if setup=true query param is present
+    if (searchParams.get('setup') === 'true') {
+      setShowFirstTimeSetup(true);
+    }
+  }, [searchParams]);
 
   const handleSetupComplete = (preferences: BudgetPreference) => {
     localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');

@@ -7,6 +7,8 @@ import { useHeaderScroll } from "~/hooks/useHeaderScroll";
 import { cn } from "~/utils/cn";
 import { useState, useEffect } from "react";
 import { FullscreenMenu } from "./ui/FullscreenMenu";
+import { Toast } from "./ui/Toast";
+import { Button } from "./ui/Button";
 
 const PROTECTED_ROUTES = ["/groups", "/gifts", "/analytics"];
 const STORAGE_KEYS = {
@@ -25,14 +27,19 @@ export function Navigation() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasCheckedSetup, setHasCheckedSetup] = useState(false);
+  const [showSetupToast, setShowSetupToast] = useState(false);
+  const [hasCompletedSetup, setHasCompletedSetup] = useState(false);
 
   useEffect(() => {
-    const hasCompletedSetup = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
-    if (!hasCompletedSetup && PROTECTED_ROUTES.some(route => pathname?.startsWith(route))) {
-      router.push('/');
+    const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
+    setHasCompletedSetup(!!setupCompleted);
+    
+    if (!setupCompleted && PROTECTED_ROUTES.some(route => pathname?.startsWith(route))) {
+      setShowSetupToast(true);
+      setTimeout(() => setShowSetupToast(false), 6000);
     }
     setHasCheckedSetup(true);
-  }, [pathname, router]);
+  }, [pathname]);
 
   // Don't render anything until we've checked setup status
   if (!hasCheckedSetup) {
@@ -102,6 +109,37 @@ export function Navigation() {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
       />
+
+      {/* Setup Required Toast */}
+      <Toast
+        message="Please complete the first-time setup to access this feature"
+        type="info"
+        isVisible={showSetupToast}
+        onClose={() => setShowSetupToast(false)}
+      />
+
+      {/* Protected Route Content Block */}
+      {!hasCompletedSetup && PROTECTED_ROUTES.some(route => pathname?.startsWith(route)) && (
+        <div className="fixed inset-0 z-20 bg-background/95 backdrop-blur-sm flex items-center justify-center">
+          <div className="max-w-md mx-auto p-8 rounded-xl bg-background border border-border/50 shadow-lg text-center space-y-6">
+            <GiftIcon className="w-16 h-16 mx-auto text-primary" />
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Setup Required</h2>
+              <p className="text-foreground/80">
+                Complete the first-time setup to access Gift List features and start managing your gifts.
+              </p>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => router.push('/?setup=true')}
+                className="w-full"
+              >
+                Complete Setup
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

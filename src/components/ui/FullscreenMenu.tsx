@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Gift, Users, PieChart, Settings, Sun, Moon, Monitor, DollarSign, RefreshCw, ShoppingCart } from "lucide-react";
+import { X, Gift, Users, PieChart, Settings, Sun, Moon, Monitor, DollarSign, RefreshCw, ShoppingCart, AlertCircle } from "lucide-react";
 import { Button } from "./Button";
 import { cn } from "../../utils/cn";
 import { useRouter, usePathname } from "next/navigation";
@@ -107,10 +107,13 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
   const { theme, setTheme } = useTheme();
   const [budgetPrefs, setBudgetPrefs] = React.useState<BudgetPreference | null>(null);
   const { plannedGifts, loading: giftsLoading } = usePlannedGifts();
+  const [hasCompletedSetup, setHasCompletedSetup] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
     const storedPrefs = localStorage.getItem(STORAGE_KEYS.BUDGET_PREFERENCES);
+    const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
+    setHasCompletedSetup(!!setupCompleted);
     if (storedPrefs) {
       setBudgetPrefs(JSON.parse(storedPrefs));
     }
@@ -138,6 +141,11 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
     router.push(path);
   };
 
+  const handleSetupClick = () => {
+    onClose();
+    router.push('/?setup=true');
+  };
+
   const updateBudgetPreferences = (updates: Partial<BudgetPreference>) => {
     const newPrefs = { ...budgetPrefs, ...updates } as BudgetPreference;
     setBudgetPrefs(newPrefs);
@@ -149,13 +157,14 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
       localStorage.removeItem(key);
     });
     setBudgetPrefs(null);
+    setHasCompletedSetup(false);
     onClose();
     router.push('/');
   };
 
   if (!mounted) return null;
 
-  const menuContent = (
+  return createPortal(
     <div className="fixed inset-0 z-[99] pointer-events-none">
       <AnimatePresence>
         {isOpen && (
@@ -211,6 +220,30 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
               <div className="space-y-12">
+                {!hasCompletedSetup && (
+                  <motion.div
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate={isOpen ? "visible" : "hidden"}
+                    className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
+                      <div className="space-y-2">
+                        <h3 className="font-medium text-blue-900 dark:text-blue-100">Setup Required</h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">Complete the first-time setup to access all features.</p>
+                        <Button
+                          variant="primary"
+                          onClick={handleSetupClick}
+                          className="w-full mt-2"
+                        >
+                          Complete Setup
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
                     Navigation
@@ -248,51 +281,53 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    To Buy
-                  </h3>
-                  <div className="space-y-4">
-                    {!giftsLoading && plannedGifts.length === 0 && (
-                      <p className="text-gray-500 dark:text-gray-400 italic">
-                        No planned gifts yet
-                      </p>
-                    )}
-                    {plannedGifts.map((gift, index) => (
-                      <motion.div
-                        key={gift.id}
-                        custom={index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate={isOpen ? "visible" : "hidden"}
-                        transition={{ delay: 0.4 + index * 0.1 }}
-                        className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">
-                              {gift.name}
-                            </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              ${gift.cost.toFixed(2)}
-                            </p>
+                {hasCompletedSetup && (
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      To Buy
+                    </h3>
+                    <div className="space-y-4">
+                      {!giftsLoading && plannedGifts.length === 0 && (
+                        <p className="text-gray-500 dark:text-gray-400 italic">
+                          No planned gifts yet
+                        </p>
+                      )}
+                      {plannedGifts.map((gift, index) => (
+                        <motion.div
+                          key={gift.id}
+                          custom={index}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate={isOpen ? "visible" : "hidden"}
+                          transition={{ delay: 0.4 + index * 0.1 }}
+                          className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-gray-900 dark:text-white">
+                                {gift.name}
+                              </h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                ${gift.cost.toFixed(2)}
+                              </p>
+                            </div>
+                            {gift.priority && (
+                              <span className={cn(
+                                "px-2 py-1 text-xs rounded-full",
+                                gift.priority === 1 ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
+                                gift.priority === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" :
+                                "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                              )}>
+                                Priority {gift.priority}
+                              </span>
+                            )}
                           </div>
-                          {gift.priority && (
-                            <span className={cn(
-                              "px-2 py-1 text-xs rounded-full",
-                              gift.priority === 1 ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
-                              gift.priority === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" :
-                              "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                            )}>
-                              Priority {gift.priority}
-                            </span>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-12">
@@ -416,8 +451,7 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
           </div>
         </motion.div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
-
-  return createPortal(menuContent, document.body);
 }
