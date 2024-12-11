@@ -11,16 +11,32 @@ const giftFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   cost: z.number().positive("Cost must be greater than 0"),
   status: z.enum(["planned", "purchased", "delivered"] as const),
-  tags: z.array(z.string()).optional(),
+  tagsInput: z.string().optional(),
   notes: z.string().optional(),
   priority: z.number().min(1).max(5).optional(),
-});
+}).transform(data => ({
+  name: data.name,
+  cost: data.cost,
+  status: data.status,
+  tags: data.tagsInput 
+    ? data.tagsInput.split(',').map(tag => tag.trim()).filter(Boolean)
+    : undefined,
+  notes: data.notes,
+  priority: data.priority,
+}));
 
-type GiftFormData = z.infer<typeof giftFormSchema>;
+type GiftFormInputs = {
+  name: string;
+  cost: number;
+  status: GiftStatus;
+  tagsInput: string;
+  notes?: string;
+  priority?: number;
+};
 
 interface GiftFormProps {
   gift?: Gift;
-  onSubmit: (data: GiftFormData) => Promise<void>;
+  onSubmit: (data: z.infer<typeof giftFormSchema>) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -36,186 +52,224 @@ export function GiftForm({ gift, onSubmit, onCancel }: GiftFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<GiftFormData>({
+  } = useForm<GiftFormInputs>({
     resolver: zodResolver(giftFormSchema),
     defaultValues: {
       name: gift?.name || "",
       cost: gift?.cost || undefined,
       status: gift?.status || "planned",
-      tags: gift?.tags || [],
+      tagsInput: gift?.tags?.join(", ") || "",
       notes: gift?.notes || "",
       priority: gift?.priority || undefined,
     },
   });
 
-  const handleFormSubmit = async (data: GiftFormData) => {
+  const handleFormSubmit = async (data: GiftFormInputs) => {
     try {
-      await onSubmit(data);
+      const transformedData = giftFormSchema.parse(data);
+      await onSubmit(transformedData);
       reset();
     } catch (error) {
-      // Error will be handled by the parent component
       throw error;
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      {/* Name Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Name
-        </label>
-        <input
-          {...register("name")}
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200",
-            errors.name && "border-error/50 focus:ring-error/50"
-          )}
-          placeholder="Enter gift name"
-          autoFocus
-        />
-        {errors.name && (
-          <p className="text-sm text-error">{errors.name.message}</p>
-        )}
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {/* Name Field */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-base font-medium text-foreground">
+              Name
+            </label>
+            {errors.name && (
+              <p className="text-sm text-error">{errors.name.message}</p>
+            )}
+          </div>
+          <input
+            {...register("name")}
+            className={cn(
+              "w-full px-4 py-2.5 rounded-lg text-base",
+              "bg-background/50 backdrop-blur-sm",
+              "border-2 border-border/50",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50",
+              "transition duration-200",
+              "placeholder:text-foreground-secondary/50",
+              errors.name && "border-error/50 focus:ring-error/50"
+            )}
+            placeholder="Enter gift name"
+            autoFocus
+          />
+        </div>
 
-      {/* Cost Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Cost
-        </label>
-        <input
-          {...register("cost", {
-            setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
-          })}
-          type="number"
-          step="0.01"
-          min="0"
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200",
-            errors.cost && "border-error/50 focus:ring-error/50"
-          )}
-          placeholder="Enter cost"
-        />
-        {errors.cost && (
-          <p className="text-sm text-error">{errors.cost.message}</p>
-        )}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Cost Field */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-baseline">
+              <label className="text-base font-medium text-foreground">
+                Cost
+              </label>
+              {errors.cost && (
+                <p className="text-sm text-error">{errors.cost.message}</p>
+              )}
+            </div>
+            <input
+              {...register("cost", {
+                setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
+              })}
+              type="number"
+              step="0.01"
+              min="0"
+              className={cn(
+                "w-full px-4 py-2.5 rounded-lg text-base",
+                "bg-background/50 backdrop-blur-sm",
+                "border-2 border-border/50",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "transition duration-200",
+                "placeholder:text-foreground-secondary/50",
+                errors.cost && "border-error/50 focus:ring-error/50"
+              )}
+              placeholder="Enter cost"
+            />
+          </div>
 
-      {/* Status Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Status
-        </label>
-        <select
-          {...register("status")}
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200"
-          )}
-        >
-          {statusOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          {/* Status Field */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-baseline">
+              <label className="text-base font-medium text-foreground">
+                Status
+              </label>
+            </div>
+            <select
+              {...register("status")}
+              className={cn(
+                "w-full px-4 py-2.5 rounded-lg text-base",
+                "bg-background/50 backdrop-blur-sm",
+                "border-2 border-border/50",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "transition duration-200",
+                "placeholder:text-foreground-secondary/50"
+              )}
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      {/* Tags Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Tags (Optional, comma-separated)
-        </label>
-        <input
-          {...register("tags")}
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200"
-          )}
-          placeholder="e.g., electronics, books, clothing"
-        />
-      </div>
+        {/* Tags Field */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-base font-medium text-foreground">
+              Tags
+              <span className="ml-1 text-sm text-foreground-secondary font-normal">(Optional)</span>
+            </label>
+            {errors.tagsInput && (
+              <p className="text-sm text-error">{errors.tagsInput.message}</p>
+            )}
+          </div>
+          <input
+            {...register("tagsInput")}
+            className={cn(
+              "w-full px-4 py-2.5 rounded-lg text-base",
+              "bg-background/50 backdrop-blur-sm",
+              "border-2 border-border/50",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50",
+              "transition duration-200",
+              "placeholder:text-foreground-secondary/50"
+            )}
+            placeholder="e.g., electronics, books, clothing"
+          />
+          <p className="text-sm text-foreground-secondary">
+            Add comma-separated tags to help categorize gifts
+          </p>
+        </div>
 
-      {/* Priority Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Priority (Optional, 1-5)
-        </label>
-        <input
-          {...register("priority", {
-            setValueAs: (v) => (v === "" ? undefined : parseInt(v)),
-          })}
-          type="number"
-          min="1"
-          max="5"
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200",
-            errors.priority && "border-error/50 focus:ring-error/50"
-          )}
-          placeholder="Enter priority (1-5)"
-        />
-        {errors.priority && (
-          <p className="text-sm text-error">{errors.priority.message}</p>
-        )}
-      </div>
+        {/* Priority Field */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-base font-medium text-foreground">
+              Priority
+              <span className="ml-1 text-sm text-foreground-secondary font-normal">(Optional, 1-5)</span>
+            </label>
+            {errors.priority && (
+              <p className="text-sm text-error">{errors.priority.message}</p>
+            )}
+          </div>
+          <input
+            {...register("priority", {
+              setValueAs: (v) => (v === "" ? undefined : parseInt(v)),
+            })}
+            type="number"
+            min="1"
+            max="5"
+            className={cn(
+              "w-full px-4 py-2.5 rounded-lg text-base",
+              "bg-background/50 backdrop-blur-sm",
+              "border-2 border-border/50",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50",
+              "transition duration-200",
+              "placeholder:text-foreground-secondary/50",
+              errors.priority && "border-error/50 focus:ring-error/50"
+            )}
+            placeholder="Enter priority (1-5)"
+          />
+        </div>
 
-      {/* Notes Field */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-foreground">
-          Notes (Optional)
-        </label>
-        <textarea
-          {...register("notes")}
-          className={cn(
-            "w-full px-4 py-2 rounded-lg",
-            "bg-background/50 backdrop-blur-sm",
-            "border-2 border-border/50",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "transition duration-200"
-          )}
-          placeholder="Add any notes about this gift"
-          rows={3}
-        />
-      </div>
+        {/* Notes Field */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-base font-medium text-foreground">
+              Notes
+              <span className="ml-1 text-sm text-foreground-secondary font-normal">(Optional)</span>
+            </label>
+            {errors.notes && (
+              <p className="text-sm text-error">{errors.notes.message}</p>
+            )}
+          </div>
+          <textarea
+            {...register("notes")}
+            className={cn(
+              "w-full px-4 py-2.5 rounded-lg text-base",
+              "bg-background/50 backdrop-blur-sm",
+              "border-2 border-border/50",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50",
+              "transition duration-200",
+              "placeholder:text-foreground-secondary/50",
+              "min-h-[100px] resize-y"
+            )}
+            placeholder="Add any notes about this gift"
+            rows={3}
+          />
+        </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end gap-3">
-        {onCancel && (
+        {/* Form Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              size="lg"
+            >
+              Cancel
+            </Button>
+          )}
           <Button
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting}
+            size="lg"
           >
-            Cancel
+            {gift ? "Update" : "Add"} Gift
           </Button>
-        )}
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isSubmitting}
-        >
-          {gift ? "Update" : "Add"} Gift
-        </Button>
-      </div>
-    </form>
+        </div>
+      </form>
+    </div>
   );
 }
