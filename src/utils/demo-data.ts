@@ -1,7 +1,7 @@
 import { createClient } from '~/lib/supabase/client'
 import { generateSlug } from './slug'
 import { useAuth } from '~/contexts/auth'
-import { GiftStatus } from '~/lib/supabase/types'
+import type { GiftStatus } from '../lib/supabase/types'
 
 const DEMO_GROUPS = [
   {
