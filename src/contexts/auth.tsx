@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 })
 
-// Keys that need to be cleared to ensure proper first-time setup
+// Keys that need to be cleared for legacy data cleanup
 const LEGACY_STORAGE_KEYS = [
   'hasCompletedSetup',
   'budgetPreferences',
@@ -30,6 +30,9 @@ const LEGACY_STORAGE_KEYS = [
   'gift-list-gifts',
   'supabase-migration-completed'
 ];
+
+// Key to track if legacy cleanup has been performed
+const LEGACY_CLEANUP_KEY = 'gift-list-legacy-cleanup-completed';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -44,16 +47,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Clear all legacy localStorage keys to ensure proper first-time setup
-        LEGACY_STORAGE_KEYS.forEach(key => {
-          localStorage.removeItem(key);
-        });
-
         // Get initial session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
         if (sessionError) {
           throw new Error(`Failed to get session: ${sessionError.message}`)
+        }
+
+        // Only perform legacy cleanup if:
+        // 1. User is logging in (session exists)
+        // 2. Cleanup hasn't been performed before
+        if (session?.user && !localStorage.getItem(LEGACY_CLEANUP_KEY)) {
+          // Clear legacy localStorage keys
+          LEGACY_STORAGE_KEYS.forEach(key => {
+            localStorage.removeItem(key);
+          });
+          // Mark cleanup as completed
+          localStorage.setItem(LEGACY_CLEANUP_KEY, 'true');
+          console.log('Legacy data cleanup completed');
         }
 
         if (session?.user && isMounted) {
