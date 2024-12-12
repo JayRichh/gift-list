@@ -21,6 +21,16 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 })
 
+// Keys that need to be cleared to ensure proper first-time setup
+const LEGACY_STORAGE_KEYS = [
+  'hasCompletedSetup',
+  'budgetPreferences',
+  'gift-list-groups',
+  'gift-list-members',
+  'gift-list-gifts',
+  'supabase-migration-completed'
+];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -34,6 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        // Clear all legacy localStorage keys to ensure proper first-time setup
+        LEGACY_STORAGE_KEYS.forEach(key => {
+          localStorage.removeItem(key);
+        });
+
         // Get initial session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
