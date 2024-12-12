@@ -1,42 +1,88 @@
 "use client";
 
 import * as React from "react";
-import { Upload, X, Clipboard } from "lucide-react";
+import { Upload, X, Clipboard, Save, Download } from "lucide-react";
 import { Button } from "./Button";
 import { Text } from "./Text";
 import { cn } from "../../utils/cn";
 import type { Group, Member, Gift } from "~/types/gift-list";
 import { generateSlug } from "~/utils/slug";
 
-interface CSVRow {
-  "Recipient Name": string;
-  "Gift": string;
-  "Overall Budget": string;
-  "Actual Cost": string;
-  "Purchase Status": string;
-  "Store": string;
-  "Gift Category": string;
-  "Gift Priority": string;
-  "Order #": string;
-  "Delivery Status": string;
-  "Total Gifts (Count)": string;
-  "Total Spent (Sum)": string;
-  "Gift_ID": string;
+interface FieldMapping {
+  recipient: string;
+  gift: string;
+  budget: string;
+  cost: string;
+  status: string;
+  store: string;
+  category: string;
+  priority: string;
+  orderNumber: string;
+  delivery: string;
+  notes: string;
 }
+
+// Common variations of field names
+const fieldVariations = {
+  recipient: ["recipient", "name", "person", "for", "to"],
+  gift: ["gift", "item", "present", "description"],
+  budget: ["budget", "limit", "max", "planned cost"],
+  cost: ["cost", "price", "amount", "spent", "actual"],
+  status: ["status", "state", "purchased", "bought"],
+  store: ["store", "shop", "retailer", "vendor", "where"],
+  category: ["category", "type", "group", "kind"],
+  priority: ["priority", "importance", "urgent"],
+  orderNumber: ["order", "tracking", "reference"],
+  delivery: ["delivery", "shipping", "received"],
+  notes: ["notes", "comments", "details", "extra"]
+};
 
 interface CSVImportProps {
   onImport: (data: { groups: Group[], members: Member[], gifts: Gift[] }) => void;
 }
 
 export function CSVImport({ onImport }: CSVImportProps) {
-  const [csvData, setCSVData] = React.useState<CSVRow[]>([]);
+  const [csvData, setCSVData] = React.useState<any[]>([]);
+  const [headers, setHeaders] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
   const [showPaste, setShowPaste] = React.useState(false);
+  const [showMapping, setShowMapping] = React.useState(false);
+  const [mapping, setMapping] = React.useState<FieldMapping>({
+    recipient: "",
+    gift: "",
+    budget: "",
+    cost: "",
+    status: "",
+    store: "",
+    category: "",
+    priority: "",
+    orderNumber: "",
+    delivery: "",
+    notes: ""
+  });
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Auto-detect field mappings based on common variations
+  const detectFieldMappings = (headers: string[]) => {
+    const newMapping = { ...mapping };
+    
+    Object.entries(fieldVariations).forEach(([field, variations]) => {
+      const matchedHeader = headers.find(header => 
+        variations.some(v => header.toLowerCase().includes(v))
+      );
+      if (matchedHeader) {
+        newMapping[field as keyof FieldMapping] = matchedHeader;
+      }
+    });
+
+    setMapping(newMapping);
+  };
 
   const processCSVText = (text: string) => {
     const rows = text.split("\n");
     const headers = rows[0].split(",").map(h => h.trim());
+    setHeaders(headers);
+    detectFieldMappings(headers);
     
     const data = rows.slice(1)
       .filter(row => row.trim())
@@ -49,6 +95,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
       });
     
     setCSVData(data);
+    setShowMapping(true);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,14 +118,16 @@ export function CSVImport({ onImport }: CSVImportProps) {
     }
   };
 
-  const mapStatus = (purchaseStatus: string, deliveryStatus: string): Gift["status"] => {
-    const status = (purchaseStatus || "").toLowerCase();
-    const delivery = (deliveryStatus || "").toLowerCase();
+  const mapStatus = (row: any): Gift["status"] => {
+    const status = (
+      row[mapping.status] || 
+      row[mapping.delivery] || 
+      ""
+    ).toLowerCase();
 
-    if (status.includes("need to sort") || status === "") return "planned";
-    if (status.includes("purchased") && delivery.includes("delivering")) return "purchased";
-    if (status.includes("delivered") || status.includes("transferred") || delivery === "delivered") return "delivered";
-    if (status.includes("purchased")) return "purchased";
+    if (status.includes("need") || status === "") return "planned";
+    if (status.includes("deliver") || status.includes("received")) return "delivered";
+    if (status.includes("purchas") || status.includes("bought")) return "purchased";
     return "planned";
   };
 
@@ -94,7 +143,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
         gifts: [] as Gift[]
       };
 
-      // Create a default group for imported data
+      // Create a default group
       const defaultGroup: Group = {
         id: crypto.randomUUID(),
         slug: "imported-gifts",
@@ -105,25 +154,23 @@ export function CSVImport({ onImport }: CSVImportProps) {
       };
       importedData.groups.push(defaultGroup);
 
-      // First pass: Create members and aggregate their total gifts/spent
+      // First pass: Create members
       const memberTotals = new Map<string, { count: number; spent: number; budget: number }>();
       csvData.forEach(row => {
-        const recipientName = row["Recipient Name"];
+        const recipientName = row[mapping.recipient];
         if (!recipientName) return;
 
         const current = memberTotals.get(recipientName) || { count: 0, spent: 0, budget: 0 };
-        const totalCount = parseInt(row["Total Gifts (Count)"]) || 0;
-        const totalSpent = parseFloat(row["Total Spent (Sum)"]) || 0;
-        const budget = parseFloat(row["Overall Budget"]) || 0;
+        const cost = parseFloat(row[mapping.cost]) || 0;
+        const budget = parseFloat(row[mapping.budget]) || 0;
 
-        if (totalCount > current.count) current.count = totalCount;
-        if (totalSpent > current.spent) current.spent = totalSpent;
+        current.count++;
+        current.spent += cost;
         if (budget > current.budget) current.budget = budget;
 
         memberTotals.set(recipientName, current);
       });
 
-      // Create members with aggregated totals
       memberTotals.forEach((totals, recipientName) => {
         const member: Member = {
           id: crypto.randomUUID(),
@@ -131,7 +178,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
           groupId: defaultGroup.id,
           name: recipientName,
           budget: totals.budget || undefined,
-          notes: totals.count > 0 ? `Total Gifts: ${totals.count}\nTotal Spent: $${totals.spent.toFixed(2)}` : undefined,
+          notes: `Total Gifts: ${totals.count}\nTotal Spent: $${totals.spent.toFixed(2)}`,
           createdAt: timestamp,
           updatedAt: timestamp
         };
@@ -140,30 +187,31 @@ export function CSVImport({ onImport }: CSVImportProps) {
 
       // Second pass: Create gifts
       csvData.forEach(row => {
-        const recipientName = row["Recipient Name"];
+        const recipientName = row[mapping.recipient];
         if (!recipientName) return;
 
         const member = importedData.members.find(m => m.name === recipientName);
         if (!member) return;
 
-        const giftName = row["Gift"];
+        const giftName = row[mapping.gift];
         if (giftName) {
-          // Combine metadata into notes, only including non-empty fields
+          // Combine metadata into notes
           const notes = [
-            row["Store"] && `Store: ${row["Store"]}`,
-            row["Gift Category"] && `Category: ${row["Gift Category"]}`,
-            row["Order #"] && `Order #: ${row["Order #"]}`,
-            row["Delivery Status"] && `Delivery: ${row["Delivery Status"]}`
+            row[mapping.store] && `Store: ${row[mapping.store]}`,
+            row[mapping.category] && `Category: ${row[mapping.category]}`,
+            row[mapping.orderNumber] && `Order #: ${row[mapping.orderNumber]}`,
+            row[mapping.delivery] && `Delivery: ${row[mapping.delivery]}`,
+            row[mapping.notes] && row[mapping.notes]
           ].filter(Boolean).join("\n");
 
           const gift: Gift = {
-            id: row["Gift_ID"] || crypto.randomUUID(),
+            id: crypto.randomUUID(),
             memberId: member.id,
             name: giftName,
-            cost: parseFloat(row["Actual Cost"]) || 0,
-            status: mapStatus(row["Purchase Status"], row["Delivery Status"]),
+            cost: parseFloat(row[mapping.cost]) || 0,
+            status: mapStatus(row),
             notes: notes || undefined,
-            priority: parseInt(row["Gift Priority"]) || undefined,
+            priority: parseInt(row[mapping.priority]) || undefined,
             createdAt: timestamp,
             updatedAt: timestamp
           };
@@ -176,6 +224,27 @@ export function CSVImport({ onImport }: CSVImportProps) {
       console.error("Error importing data:", error);
     } finally {
       setImporting(false);
+    }
+  };
+
+  // Save current mapping to localStorage
+  const saveMapping = () => {
+    try {
+      localStorage.setItem('csv-import-mapping', JSON.stringify(mapping));
+    } catch (error) {
+      console.error("Error saving mapping:", error);
+    }
+  };
+
+  // Load saved mapping from localStorage
+  const loadMapping = () => {
+    try {
+      const saved = localStorage.getItem('csv-import-mapping');
+      if (saved) {
+        setMapping(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error("Error loading mapping:", error);
     }
   };
 
@@ -213,85 +282,128 @@ export function CSVImport({ onImport }: CSVImportProps) {
     );
   }
 
-  if (!csvData.length) {
+  if (showMapping) {
     return (
-      <div className="flex gap-2">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Text className="font-medium">Map Fields</Text>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={saveMapping}
+              title="Save mapping"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadMapping}
+              title="Load saved mapping"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowMapping(false);
+                setCSVData([]);
+                setHeaders([]);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {Object.entries(mapping).map(([field, value]) => (
+            <div key={field} className="flex items-center gap-2">
+              <Text className="text-sm w-24 capitalize">{field}:</Text>
+              <select
+                value={value}
+                onChange={(e) => setMapping(prev => ({ ...prev, [field]: e.target.value }))}
+                className={cn(
+                  "flex-1 h-8 rounded-lg text-sm",
+                  "bg-background/95",
+                  "border-2 border-border/50",
+                  "focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                )}
+              >
+                <option value="">Select field</option>
+                {headers.map(header => (
+                  <option key={header} value={header}>{header}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <Text className="font-medium">Preview</Text>
+          <div className="max-h-48 overflow-y-auto rounded-lg border-2 border-border/50">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-background/95">
+                <tr className="border-b border-border/50">
+                  <th className="p-2 text-left">Recipient</th>
+                  <th className="p-2 text-left">Gift</th>
+                  <th className="p-2 text-left">Cost</th>
+                  <th className="p-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {csvData.slice(0, 5).map((row, index) => (
+                  <tr key={index} className="border-b border-border/50 last:border-0">
+                    <td className="p-2">{row[mapping.recipient]}</td>
+                    <td className="p-2">{row[mapping.gift]}</td>
+                    <td className="p-2">${row[mapping.cost] || "0"}</td>
+                    <td className="p-2">{mapStatus(row)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <Button
-          variant="outline"
-          className="flex-1 flex items-center gap-2"
-          onClick={() => setShowPaste(true)}
+          variant="primary"
+          onClick={handleImport}
+          className="w-full"
+          disabled={importing || !mapping.recipient || !mapping.gift}
         >
-          <Clipboard className="h-4 w-4" />
-          Paste CSV
+          {importing ? "Importing..." : `Import ${csvData.length} Items`}
         </Button>
-        <label className="flex-1">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            className="w-full flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Upload CSV
-          </Button>
-        </label>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Text className="font-medium">Preview ({csvData.length} items)</Text>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setCSVData([]);
-            setShowPaste(false);
-          }}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="max-h-48 overflow-y-auto rounded-lg border-2 border-border/50">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-background/95">
-            <tr className="border-b border-border/50">
-              <th className="p-2 text-left">Recipient</th>
-              <th className="p-2 text-left">Gift</th>
-              <th className="p-2 text-left">Cost</th>
-              <th className="p-2 text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {csvData.map((row, index) => (
-              <tr key={index} className="border-b border-border/50 last:border-0">
-                <td className="p-2">{row["Recipient Name"]}</td>
-                <td className="p-2">{row["Gift"]}</td>
-                <td className="p-2">${row["Actual Cost"] || "0"}</td>
-                <td className="p-2">
-                  {mapStatus(row["Purchase Status"], row["Delivery Status"])}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+    <div className="flex gap-2">
       <Button
-        variant="primary"
-        onClick={handleImport}
-        className="w-full"
-        disabled={importing}
+        variant="outline"
+        className="flex-1 flex items-center gap-2"
+        onClick={() => setShowPaste(true)}
       >
-        {importing ? "Importing..." : "Import Data"}
+        <Clipboard className="h-4 w-4" />
+        Paste CSV
       </Button>
+      <label className="flex-1">
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <Button
+          variant="outline"
+          className="w-full flex items-center gap-2"
+        >
+          <Upload className="h-4 w-4" />
+          Upload CSV
+        </Button>
+      </label>
     </div>
   );
 }
