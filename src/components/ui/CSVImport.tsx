@@ -7,6 +7,7 @@ import { Text } from "./Text";
 import { cn } from "../../utils/cn";
 import type { Group, Member, Gift } from "~/types/gift-list";
 import { generateSlug } from "~/utils/slug";
+import { useAuth } from "~/contexts/auth";
 
 interface FieldMapping {
   recipient: string;
@@ -61,6 +62,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
     notes: ""
   });
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
 
   // Auto-detect field mappings based on common variations
   const detectFieldMappings = (headers: string[]) => {
@@ -132,7 +134,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
   };
 
   const handleImport = () => {
-    if (!csvData.length) return;
+    if (!csvData.length || !user) return;
     setImporting(true);
 
     try {
@@ -143,9 +145,10 @@ export function CSVImport({ onImport }: CSVImportProps) {
         gifts: [] as any[]
       };
 
-      // Create a default group
+      // Create a default group with user_id
       const defaultGroup = {
         id: crypto.randomUUID(),
+        user_id: user.id, // Add user_id here
         slug: "imported-gifts",
         name: "Imported Gifts",
         description: "Imported from CSV on " + new Date().toLocaleDateString(),
