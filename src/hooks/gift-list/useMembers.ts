@@ -3,7 +3,19 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '~/lib/supabase/client'
 import type { Member } from '~/types/gift-list'
+import type { Database } from '~/lib/supabase/types'
 import { useAuth } from '~/contexts/auth'
+
+type MemberRow = Database['public']['Tables']['members']['Row']
+
+const formatMember = (member: MemberRow): Member => ({
+  id: member.id,
+  groupId: member.group_id,
+  name: member.name,
+  slug: member.slug,
+  createdAt: member.created_at,
+  updatedAt: member.updated_at
+})
 
 export function useMembers(groupId?: string) {
   const [members, setMembers] = useState<Member[]>([])
@@ -12,45 +24,40 @@ export function useMembers(groupId?: string) {
   const { user } = useAuth()
   const supabase = createClient()
 
-  useEffect(() => {
+  const fetchMembers = async () => {
     if (!user || !groupId) {
       setMembers([])
       setLoading(false)
       return
     }
 
-    const fetchMembers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('members')
-          .select('*, groups!inner(*)')
-          .eq('groups.user_id', user.id)
-          .eq('group_id', groupId)
-          .order('created_at', { ascending: true })
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*, groups!inner(*)')
+        .eq('groups.user_id', user.id)
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true })
 
-        if (error) throw error
+      if (error) throw error
 
-        setMembers(data.map(member => ({
-          id: member.id,
-          groupId: member.group_id,
-          name: member.name,
-          slug: member.slug,
-          createdAt: member.created_at,
-          updatedAt: member.updated_at
-        })))
-      } catch (err) {
-        console.error('Error fetching members:', err)
-        setError('Failed to load members')
-      } finally {
-        setLoading(false)
-      }
+      setMembers(data.map(formatMember))
+    } catch (err) {
+      console.error('Error fetching members:', err)
+      setError('Failed to load members')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchMembers()
 
-    // Subscribe to changes
+    if (!user?.id || !groupId) return
+
+    const channelId = `members_changes_${groupId}_${user.id}`
     const subscription = supabase
-      .channel('members_changes')
+      .channel(channelId)
       .on('postgres_changes', 
         { 
           event: '*', 
@@ -58,8 +65,18 @@ export function useMembers(groupId?: string) {
           table: 'members',
           filter: `group_id=eq.${groupId}`
         }, 
-        () => {
-          fetchMembers()
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newMember = payload.new as MemberRow
+            setMembers(current => [...current, formatMember(newMember)])
+          } else if (payload.eventType === 'DELETE') {
+            setMembers(current => current.filter(member => member.id !== payload.old.id))
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMember = payload.new as MemberRow
+            setMembers(current => current.map(member => 
+              member.id === updatedMember.id ? formatMember(updatedMember) : member
+            ))
+          }
         }
       )
       .subscribe()
@@ -67,10 +84,11 @@ export function useMembers(groupId?: string) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [user, groupId])
+  }, [user?.id, groupId])
 
   const createMember = async (data: Omit<Member, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) throw new Error('Must be logged in to create members')
+    if (!groupId) throw new Error('Group ID is required to create members')
 
     try {
       const { data: newMember, error } = await supabase
@@ -85,14 +103,9 @@ export function useMembers(groupId?: string) {
 
       if (error) throw error
 
-      return {
-        id: newMember.id,
-        groupId: newMember.group_id,
-        name: newMember.name,
-        slug: newMember.slug,
-        createdAt: newMember.created_at,
-        updatedAt: newMember.updated_at
-      }
+      const formattedMember = formatMember(newMember)
+      setMembers(current => [...current, formattedMember])
+      return formattedMember
     } catch (err) {
       console.error('Error creating member:', err)
       throw new Error('Failed to create member')
@@ -101,6 +114,7 @@ export function useMembers(groupId?: string) {
 
   const updateMember = async (id: string, data: Partial<Omit<Member, 'id' | 'groupId' | 'createdAt' | 'updatedAt'>>) => {
     if (!user) throw new Error('Must be logged in to update members')
+    if (!groupId) throw new Error('Group ID is required to update members')
 
     try {
       const { data: updatedMember, error } = await supabase
@@ -110,19 +124,17 @@ export function useMembers(groupId?: string) {
           slug: data.slug
         })
         .eq('id', id)
+        .eq('group_id', groupId)
         .select()
         .single()
 
       if (error) throw error
 
-      return {
-        id: updatedMember.id,
-        groupId: updatedMember.group_id,
-        name: updatedMember.name,
-        slug: updatedMember.slug,
-        createdAt: updatedMember.created_at,
-        updatedAt: updatedMember.updated_at
-      }
+      const formattedMember = formatMember(updatedMember)
+      setMembers(current => current.map(member => 
+        member.id === id ? formattedMember : member
+      ))
+      return formattedMember
     } catch (err) {
       console.error('Error updating member:', err)
       throw new Error('Failed to update member')
@@ -131,14 +143,18 @@ export function useMembers(groupId?: string) {
 
   const deleteMember = async (id: string) => {
     if (!user) throw new Error('Must be logged in to delete members')
+    if (!groupId) throw new Error('Group ID is required to delete members')
 
     try {
       const { error } = await supabase
         .from('members')
         .delete()
         .eq('id', id)
+        .eq('group_id', groupId)
 
       if (error) throw error
+
+      setMembers(current => current.filter(member => member.id !== id))
     } catch (err) {
       console.error('Error deleting member:', err)
       throw new Error('Failed to delete member')

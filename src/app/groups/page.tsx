@@ -37,20 +37,16 @@ export default function GroupsPage() {
   const { gifts, loading: giftsLoading } = useGifts();
   const { members, loading: membersLoading } = useAllMembers();
 
-  // Calculate stats for each group
   const groupStats = useMemo(() => {
     const memberCounts: Record<string, number> = {};
     const giftCounts: Record<string, number> = {};
     const spentAmounts: Record<string, number> = {};
 
-    // Calculate member counts
     members.forEach(member => {
       memberCounts[member.groupId] = (memberCounts[member.groupId] || 0) + 1;
     });
 
-    // Calculate gift counts and spent amounts
     gifts.forEach(gift => {
-      // Find member's group
       const member = members.find(m => m.id === gift.memberId);
       if (member) {
         const groupId = member.groupId;
@@ -83,28 +79,23 @@ export default function GroupsPage() {
     setIsSubmitting(true);
     
     try {
-      // Get stored preferences
       const storedPreferences = localStorage.getItem('budgetPreferences');
       const preferences = storedPreferences ? JSON.parse(storedPreferences) as BudgetPreference : null;
       
-      // If no budget is provided but default exists in preferences, use it
       if (!data.budget && preferences?.defaultBudget) {
         data.budget = preferences.defaultBudget;
       }
       
-      // If no price ranges provided, use from preferences
       if (!data.priceRanges && preferences?.priceRanges) {
         data.priceRanges = preferences.priceRanges;
       }
       
-      // Generate slug from name
       const groupData = {
         ...data,
         slug: generateSlug(data.name)
       };
       
       await createGroup(groupData);
-      await new Promise(resolve => setTimeout(resolve, 100));
       setIsCreateModalOpen(false);
       showToast("Group created successfully!", "success");
     } catch (error) {
@@ -124,7 +115,6 @@ export default function GroupsPage() {
     setIsSubmitting(true);
     try {
       await updateGroup(editingGroup.id, data);
-      await new Promise(resolve => setTimeout(resolve, 100));
       setEditingGroup(null);
       showToast("Group updated successfully!", "success");
     } catch (error) {
@@ -154,7 +144,6 @@ export default function GroupsPage() {
     <>
       <Container>
         <div className="space-y-8 sm:space-y-10">
-          {/* Header */}
           <div className="space-y-6 sm:space-y-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -189,7 +178,6 @@ export default function GroupsPage() {
             </motion.div>
           </div>
 
-          {/* Content */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -223,7 +211,6 @@ export default function GroupsPage() {
         </div>
       </Container>
 
-      {/* Create Group Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => !isSubmitting && setIsCreateModalOpen(false)}
@@ -235,7 +222,6 @@ export default function GroupsPage() {
         />
       </Modal>
 
-      {/* Edit Group Modal */}
       <Modal
         isOpen={!!editingGroup}
         onClose={() => !isSubmitting && setEditingGroup(null)}
@@ -250,7 +236,6 @@ export default function GroupsPage() {
         )}
       </Modal>
 
-      {/* Toast Notifications */}
       {toast && (
         <Toast
           message={toast.message}

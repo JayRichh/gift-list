@@ -13,9 +13,13 @@ import { Text } from "~/components/ui/Text";
 import { Button } from "~/components/ui/Button";
 import { Modal } from "~/components/ui/Modal";
 import { Toast } from "~/components/ui/Toast";
+import { Spinner } from "~/components/ui/Spinner";
 import { GiftForm } from "~/components/gifts/GiftForm";
 import { GiftList } from "~/components/gifts/GiftList";
 import type { Gift } from "~/types/gift-list";
+
+type GiftFormData = Omit<Gift, 'id' | 'memberId' | 'createdAt' | 'updatedAt'>;
+type GiftUpdateData = Partial<GiftFormData>;
 
 export default function MemberPage() {
   const params = useParams();
@@ -54,19 +58,12 @@ export default function MemberPage() {
     }, 3000);
   };
 
-  const handleCreateGift = async (data: {
-    name: string;
-    cost: number;
-    status: Gift["status"];
-    tags?: string[];
-    notes?: string;
-    priority?: number;
-  }) => {
+  const handleCreateGift = async (data: GiftFormData) => {
     if (isSubmitting || !member) return;
     setIsSubmitting(true);
+    
     try {
       await createGift({ ...data, memberId: member.id });
-      await new Promise(resolve => setTimeout(resolve, 100));
       setIsCreateModalOpen(false);
       showToast("Gift added successfully!", "success");
     } catch (error) {
@@ -76,19 +73,12 @@ export default function MemberPage() {
     }
   };
 
-  const handleEditGift = async (data: {
-    name: string;
-    cost: number;
-    status: Gift["status"];
-    tags?: string[];
-    notes?: string;
-    priority?: number;
-  }) => {
+  const handleEditGift = async (data: GiftUpdateData) => {
     if (!editingGift || isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await updateGift(editingGift.id, data);
-      await new Promise(resolve => setTimeout(resolve, 100));
       setEditingGift(null);
       showToast("Gift updated successfully!", "success");
     } catch (error) {
@@ -101,9 +91,9 @@ export default function MemberPage() {
   const handleDeleteGift = async (gift: Gift) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await deleteGift(gift.id);
-      await new Promise(resolve => setTimeout(resolve, 100));
       showToast("Gift deleted successfully!", "success");
     } catch (error) {
       showToast("Failed to delete gift", "error");
@@ -115,9 +105,9 @@ export default function MemberPage() {
   const handleStatusChange = async (gift: Gift, status: Gift["status"]) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await updateGift(gift.id, { status });
-      await new Promise(resolve => setTimeout(resolve, 100));
       showToast(`Gift marked as ${status}`, "success");
     } catch (error) {
       showToast("Failed to update gift status", "error");
@@ -126,18 +116,16 @@ export default function MemberPage() {
     }
   };
 
-  // Show loading state while data is loading
   if (groupsLoading || membersLoading) {
     return (
       <Container className="py-8">
-        <div className="text-center">
-          <Text>Loading...</Text>
+        <div className="flex justify-center items-center py-12">
+          <Spinner size="lg" />
         </div>
       </Container>
     );
   }
 
-  // Show not found state if group or member doesn't exist
   if (!group || !member) {
     return (
       <Container className="py-8">
@@ -158,7 +146,6 @@ export default function MemberPage() {
     <>
       <Container className="py-8">
         <div className="space-y-8">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href={`/groups/${group.slug}`}>
@@ -182,14 +169,12 @@ export default function MemberPage() {
               variant="primary"
               onClick={() => setIsCreateModalOpen(true)}
               className="gap-2"
-              disabled={isSubmitting}
             >
               <Plus className="w-4 h-4" />
               Add Gift
             </Button>
           </div>
 
-          {/* Stats */}
           <div className="flex items-center gap-4 p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
             <div className="flex items-center gap-2">
               <GiftIcon className="w-5 h-5 text-foreground-secondary" />
@@ -206,11 +191,14 @@ export default function MemberPage() {
             )}
           </div>
 
-          {/* Gifts List */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
             {giftsLoading ? (
-              <div className="text-center py-12">
-                <Text>Loading gifts...</Text>
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
               </div>
             ) : giftsError ? (
               <div className="text-center text-error py-12">
@@ -225,16 +213,15 @@ export default function MemberPage() {
             ) : (
               <GiftList
                 gifts={gifts}
-                onEditGift={!isSubmitting ? setEditingGift : undefined}
-                onDeleteGift={!isSubmitting ? handleDeleteGift : undefined}
-                onStatusChange={!isSubmitting ? handleStatusChange : undefined}
+                onEditGift={setEditingGift}
+                onDeleteGift={handleDeleteGift}
+                onStatusChange={handleStatusChange}
               />
             )}
-          </div>
+          </motion.div>
         </div>
       </Container>
 
-      {/* Create Gift Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => !isSubmitting && setIsCreateModalOpen(false)}
@@ -246,7 +233,6 @@ export default function MemberPage() {
         />
       </Modal>
 
-      {/* Edit Gift Modal */}
       <Modal
         isOpen={!!editingGift}
         onClose={() => !isSubmitting && setEditingGift(null)}
@@ -261,7 +247,6 @@ export default function MemberPage() {
         )}
       </Modal>
 
-      {/* Toast Notifications */}
       {toast && (
         <Toast
           message={toast.message}

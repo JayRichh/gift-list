@@ -9,7 +9,10 @@ import { Toast } from "~/components/ui/Toast";
 import { GiftList } from "~/components/gifts/GiftList";
 import { GiftForm } from "~/components/gifts/GiftForm";
 import { Modal } from "~/components/ui/Modal";
+import { Spinner } from "~/components/ui/Spinner";
 import type { Gift } from "~/types/gift-list";
+
+type GiftUpdateData = Partial<Omit<Gift, 'id' | 'memberId' | 'createdAt' | 'updatedAt'>>;
 
 export default function GiftsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +32,6 @@ export default function GiftsPage() {
     deleteGift,
   } = useGifts();
 
-  // Create a map of group names for easy lookup
   const groupMap = new Map(
     groups.map(group => [group.id, { name: group.name, slug: group.slug }])
   );
@@ -42,16 +44,19 @@ export default function GiftsPage() {
   };
 
   const handleEditGift = (gift: Gift) => {
-    setEditingGift(gift);
+    if (!isSubmitting) {
+      setEditingGift(gift);
+    }
   };
 
-  const handleUpdateGift = async (data: any) => {
+  const handleUpdateGift = async (data: GiftUpdateData) => {
     if (!editingGift || isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await updateGift(editingGift.id, data);
-      showToast("Gift updated successfully!", "success");
       setEditingGift(null);
+      showToast("Gift updated successfully!", "success");
     } catch (error) {
       showToast("Failed to update gift", "error");
     } finally {
@@ -62,9 +67,9 @@ export default function GiftsPage() {
   const handleDeleteGift = async (gift: Gift) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await deleteGift(gift.id);
-      await new Promise(resolve => setTimeout(resolve, 100));
       showToast("Gift deleted successfully!", "success");
     } catch (error) {
       showToast("Failed to delete gift", "error");
@@ -76,9 +81,9 @@ export default function GiftsPage() {
   const handleStatusChange = async (gift: Gift, status: Gift["status"]) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    
     try {
       await updateGift(gift.id, { status });
-      await new Promise(resolve => setTimeout(resolve, 100));
       showToast(`Gift marked as ${status}`, "success");
     } catch (error) {
       showToast("Failed to update gift status", "error");
@@ -87,8 +92,9 @@ export default function GiftsPage() {
     }
   };
 
-  // Show loading state while initial data is loading
-  if (groupsLoading || giftsLoading) {
+  const loading = groupsLoading || giftsLoading;
+
+  if (loading) {
     return (
       <Container className="py-8">
         <div className="space-y-8">
@@ -96,16 +102,18 @@ export default function GiftsPage() {
             <Text variant="h1" className="text-4xl font-bold">
               All Gifts
             </Text>
-            <Text className="text-foreground-secondary max-w-2xl">
-              Loading your gifts...
-            </Text>
+            <div className="flex items-center space-x-2">
+              <Spinner size="sm" />
+              <Text className="text-foreground-secondary">
+                Loading your gifts...
+              </Text>
+            </div>
           </div>
         </div>
       </Container>
     );
   }
 
-  // Show error state if there's an error
   if (giftsError) {
     return (
       <Container className="py-8">
@@ -126,7 +134,6 @@ export default function GiftsPage() {
   return (
     <>
       <Container className="py-8 space-y-8">
-        {/* Header */}
         <div className="space-y-4">
           <Text variant="h1" className="text-4xl font-bold">
             All Gifts
@@ -137,37 +144,42 @@ export default function GiftsPage() {
           </Text>
         </div>
 
-        {/* Content */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <GiftList
-            gifts={gifts}
-            onEditGift={!isSubmitting ? handleEditGift : undefined}
-            onDeleteGift={!isSubmitting ? handleDeleteGift : undefined}
-            onStatusChange={!isSubmitting ? handleStatusChange : undefined}
-          />
+          {gifts.length === 0 ? (
+            <div className="text-center py-12">
+              <Text className="text-foreground-secondary">
+                No gifts found. Add gifts to members in your groups to get started!
+              </Text>
+            </div>
+          ) : (
+            <GiftList
+              gifts={gifts}
+              onEditGift={handleEditGift}
+              onDeleteGift={handleDeleteGift}
+              onStatusChange={handleStatusChange}
+            />
+          )}
         </motion.div>
       </Container>
 
-      {/* Edit Gift Modal */}
-      {editingGift && (
-        <Modal
-          isOpen={true}
-          onClose={() => setEditingGift(null)}
-          title="Edit Gift"
-        >
+      <Modal
+        isOpen={!!editingGift}
+        onClose={() => !isSubmitting && setEditingGift(null)}
+        title="Edit Gift"
+      >
+        {editingGift && (
           <GiftForm
             gift={editingGift}
             onSubmit={handleUpdateGift}
-            onCancel={() => setEditingGift(null)}
+            onCancel={() => !isSubmitting && setEditingGift(null)}
           />
-        </Modal>
-      )}
+        )}
+      </Modal>
 
-      {/* Toast Notifications */}
       {toast && (
         <Toast
           message={toast.message}
