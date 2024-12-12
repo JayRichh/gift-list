@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Gift, Users, PieChart, Settings, Sun, Moon, Monitor, DollarSign, RefreshCw, ShoppingCart, AlertCircle } from "lucide-react";
+import { X, Gift as GiftIcon, Users, PieChart, Settings, Sun, Moon, Monitor, DollarSign, RefreshCw, ShoppingCart, AlertCircle, Upload, Database } from "lucide-react";
 import { Button } from "./Button";
 import { cn } from "../../utils/cn";
 import { useRouter, usePathname } from "next/navigation";
@@ -11,7 +11,8 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Select } from "./Select";
 import { Text } from "./Text";
-import type { BudgetPreference } from "~/types/gift-list";
+import { CSVImport } from "./CSVImport";
+import type { BudgetPreference, Group, Member, Gift } from "~/types/gift-list";
 import { usePlannedGifts } from "~/hooks/gift-list/usePlannedGifts";
 
 interface FullscreenMenuProps {
@@ -21,7 +22,7 @@ interface FullscreenMenuProps {
 
 const mainLinks = [
   { label: "Groups", path: "/groups", icon: Users },
-  { label: "All Gifts", path: "/gifts", icon: Gift },
+  { label: "All Gifts", path: "/gifts", icon: GiftIcon },
   { label: "Analytics", path: "/analytics", icon: PieChart },
 ];
 
@@ -161,6 +162,25 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
     setHasCompletedSetup(false);
     onClose();
     router.push('/');
+  };
+
+  const handleImport = (data: { groups: Group[], members: Member[], gifts: Gift[] }) => {
+    // Merge with existing data
+    const existingGroups = JSON.parse(localStorage.getItem(STORAGE_KEYS.GROUPS) || '[]');
+    const existingMembers = JSON.parse(localStorage.getItem(STORAGE_KEYS.MEMBERS) || '[]');
+    const existingGifts = JSON.parse(localStorage.getItem(STORAGE_KEYS.GIFTS) || '[]');
+
+    const newGroups = [...existingGroups, ...data.groups];
+    const newMembers = [...existingMembers, ...data.members];
+    const newGifts = [...existingGifts, ...data.gifts];
+
+    localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(newGroups));
+    localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(newMembers));
+    localStorage.setItem(STORAGE_KEYS.GIFTS, JSON.stringify(newGifts));
+
+    // Refresh the page to show new data
+    router.refresh();
+    onClose();
   };
 
   if (!mounted) return null;
@@ -319,38 +339,48 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                 )}
               </div>
 
-              <div className="space-y-8">
-                <Text className="text-lg font-medium">Settings</Text>
-                <div className="space-y-6">
-                  <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
-                    <Text className="font-medium">Theme</Text>
-                    <div className="grid grid-cols-3 gap-4">
-                      {themeOptions.map(({ label, value, icon: Icon }, index) => (
-                        <motion.button
-                          key={value}
-                          custom={index}
-                          variants={itemVariants}
-                          initial="hidden"
-                          animate={isOpen ? "visible" : "hidden"}
-                          transition={{ delay: 0.6 + index * 0.1 }}
-                          onClick={() => setTheme(value)}
-                          className={cn(
-                            "p-4 rounded-xl border-2 transition-all",
-                            theme === value
-                              ? "border-primary bg-primary/5"
-                              : "border-border/50 bg-background/95 hover:border-primary/50"
-                          )}
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <Icon className="h-5 w-5" />
-                            <Text className="text-sm font-medium">{label}</Text>
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
+    <div className="space-y-8">
+      <Text className="text-lg font-medium">Settings</Text>
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+          <Text className="font-medium">Theme</Text>
+          <div className="grid grid-cols-3 gap-4">
+            {themeOptions.map(({ label, value, icon: Icon }, index) => (
+              <motion.button
+                key={value}
+                custom={index}
+                variants={itemVariants}
+                initial="hidden"
+                animate={isOpen ? "visible" : "hidden"}
+                transition={{ delay: 0.6 + index * 0.1 }}
+                onClick={() => setTheme(value)}
+                className={cn(
+                  "p-4 rounded-xl border-2 transition-all",
+                  theme === value
+                    ? "border-primary bg-primary/5"
+                    : "border-border/50 bg-background/95 hover:border-primary/50"
+                )}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Icon className="h-5 w-5" />
+                  <Text className="text-sm font-medium">{label}</Text>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
 
-                  {budgetPrefs && (
+        {hasCompletedSetup && (
+          <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+            <div className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              <Text className="font-medium">Data Management</Text>
+            </div>
+            <CSVImport onImport={handleImport} />
+          </div>
+        )}
+
+        {budgetPrefs && (
                     <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
                       <Text className="font-medium">Budget Preferences</Text>
                       <div className="space-y-4">
@@ -430,23 +460,23 @@ export function FullscreenMenu({ isOpen, onClose }: FullscreenMenuProps) {
                         </button>
                       </div>
                     </div>
-                  )}
+        )}
 
-                  <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
-                    <Text className="font-medium">Reset Application</Text>
-                    <Button
-                      variant="destructive"
-                      onClick={handleReset}
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <RefreshCw className="h-5 w-5" />
-                      Reset All Data
-                    </Button>
-                    <Text className="text-sm text-foreground/60">
-                      This will clear all your data and preferences, and return you to the setup screen.
-                    </Text>
-                  </div>
-                </div>
+        <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+          <Text className="font-medium">Reset Application</Text>
+          <Button
+            variant="destructive"
+            onClick={handleReset}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="h-5 w-5" />
+            Reset All Data
+          </Button>
+          <Text className="text-sm text-foreground/60">
+            This will clear all your data and preferences, and return you to the setup screen.
+          </Text>
+        </div>
+      </div>
               </div>
             </div>
           </div>

@@ -19,11 +19,10 @@ export const metadata: Metadata = {
       {
         url: "/icon.svg",
         type: "image/svg+xml",
-        sizes: "any"
+        sizes: "32x32"
       }
     ],
     shortcut: "/icon.svg",
-    apple: "/icon.svg",
   },
   manifest: "/manifest.json",
   openGraph: {
@@ -32,8 +31,8 @@ export const metadata: Metadata = {
     type: "website",
     images: [{
       url: "/icon.svg",
-      width: 512,
-      height: 512,
+      width: 32,
+      height: 32,
       alt: "Gift List App Icon"
     }],
   },
