@@ -54,6 +54,7 @@ export default function GroupPage() {
     try {
       await createMember({
         ...data,
+        groupId: group.id,
         slug: generateSlug(data.name)
       });
       setIsCreateModalOpen(false);

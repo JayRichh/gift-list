@@ -1,12 +1,13 @@
+'use client'
+
 import { AuthForm } from '~/components/auth/AuthForm'
 import { Text } from '~/components/ui/Text'
+import { useSearchParams } from 'next/navigation'
 
-export default function SignupPage({
-  searchParams,
-}: {
-  searchParams: { error?: string; error_description?: string }
-}) {
-  const { error, error_description } = searchParams
+export default function SignUpPage() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+  const error_description = searchParams.get('error_description')
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -14,7 +15,7 @@ export default function SignupPage({
         {error && (
           <div className="p-4 rounded-xl border-2 border-destructive/20 bg-destructive/5">
             <Text className="text-sm text-destructive">
-              {error_description || 'An error occurred during signup'}
+              {error_description || 'An error occurred during sign up'}
             </Text>
           </div>
         )}

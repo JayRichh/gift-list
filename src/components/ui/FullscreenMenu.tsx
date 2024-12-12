@@ -359,11 +359,18 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
         }
       }
 
-      // Import members
+      // Import members - transform data to match database schema
       for (const member of data.members) {
         const { error: memberError } = await supabase
           .from('members')
-          .insert(member);
+          .insert({
+            id: member.id,
+            group_id: member.groupId,
+            name: member.name,
+            slug: member.slug,
+            created_at: member.createdAt,
+            updated_at: member.updatedAt
+          });
 
         if (memberError) {
           console.error('Member import error:', memberError);
@@ -371,11 +378,21 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
         }
       }
 
-      // Import gifts
+      // Import gifts - transform data to match database schema
       for (const gift of data.gifts) {
         const { error: giftError } = await supabase
           .from('gifts')
-          .insert(gift);
+          .insert({
+            id: gift.id,
+            member_id: gift.memberId,
+            name: gift.name,
+            description: gift.notes,
+            cost: gift.cost,
+            status: gift.status,
+            tags: gift.tags,
+            created_at: gift.createdAt,
+            updated_at: gift.updatedAt
+          });
 
         if (giftError) {
           console.error('Gift import error:', giftError);

@@ -27,7 +27,6 @@ export default function GiftsPage() {
     error: giftsError,
     updateGift,
     deleteGift,
-    updateGiftStatus,
   } = useGifts();
 
   // Create a map of group names for easy lookup
@@ -78,7 +77,7 @@ export default function GiftsPage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await updateGiftStatus(gift.id, status);
+      await updateGift(gift.id, { status });
       await new Promise(resolve => setTimeout(resolve, 100));
       showToast(`Gift marked as ${status}`, "success");
     } catch (error) {

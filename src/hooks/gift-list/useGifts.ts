@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '~/lib/supabase/client'
 import type { Gift, GiftStatus } from '~/types/gift-list'
+import type { Database } from '~/lib/supabase/types'
 import { useAuth } from '~/contexts/auth'
+
+type GiftRow = Database['public']['Tables']['gifts']['Row']
 
 export function useGifts(memberId?: string) {
   const [gifts, setGifts] = useState<Gift[]>([])
@@ -41,13 +44,13 @@ export function useGifts(memberId?: string) {
 
         if (error) throw error
 
-        setGifts(data.map(gift => ({
+        setGifts(data.map((gift: GiftRow) => ({
           id: gift.id,
           memberId: gift.member_id,
           name: gift.name,
-          notes: gift.description,
+          notes: gift.description || undefined,
           cost: gift.cost,
-          status: gift.status as GiftStatus,
+          status: gift.status,
           tags: gift.tags || [],
           priority: gift.priority || undefined,
           createdAt: gift.created_at,
@@ -97,7 +100,7 @@ export function useGifts(memberId?: string) {
           cost: data.cost,
           status: data.status,
           tags: data.tags,
-          priority: data.priority
+          priority: data.priority && data.priority <= 3 ? data.priority : undefined // Ensure priority is 1-3
         })
         .select()
         .single()
@@ -108,9 +111,9 @@ export function useGifts(memberId?: string) {
         id: newGift.id,
         memberId: newGift.member_id,
         name: newGift.name,
-        notes: newGift.description,
+        notes: newGift.description || undefined,
         cost: newGift.cost,
-        status: newGift.status as GiftStatus,
+        status: newGift.status,
         tags: newGift.tags || [],
         priority: newGift.priority || undefined,
         createdAt: newGift.created_at,
@@ -134,7 +137,7 @@ export function useGifts(memberId?: string) {
           cost: data.cost,
           status: data.status,
           tags: data.tags,
-          priority: data.priority
+          priority: data.priority && data.priority <= 3 ? data.priority : undefined // Ensure priority is 1-3
         })
         .eq('id', id)
         .select()
@@ -146,9 +149,9 @@ export function useGifts(memberId?: string) {
         id: updatedGift.id,
         memberId: updatedGift.member_id,
         name: updatedGift.name,
-        notes: updatedGift.description,
+        notes: updatedGift.description || undefined,
         cost: updatedGift.cost,
-        status: updatedGift.status as GiftStatus,
+        status: updatedGift.status,
         tags: updatedGift.tags || [],
         priority: updatedGift.priority || undefined,
         createdAt: updatedGift.created_at,

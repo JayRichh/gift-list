@@ -41,7 +41,7 @@ export function usePlannedGifts() {
           id: gift.id,
           memberId: gift.member_id,
           name: gift.name,
-          notes: gift.description,
+          notes: gift.description || undefined,
           cost: gift.cost,
           status: gift.status,
           tags: gift.tags || [],

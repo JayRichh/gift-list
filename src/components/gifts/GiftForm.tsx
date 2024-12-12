@@ -13,7 +13,7 @@ const giftFormSchema = z.object({
   status: z.enum(["planned", "purchased", "delivered"] as const),
   tagsInput: z.string().optional(),
   notes: z.string().optional(),
-  priority: z.number().min(1).max(5).optional(),
+  priority: z.number().min(1).max(3).optional(), // Changed from max(5) to max(3)
 }).transform(data => ({
   name: data.name,
   cost: data.cost,
@@ -194,7 +194,7 @@ export function GiftForm({ gift, onSubmit, onCancel }: GiftFormProps) {
           <div className="flex justify-between items-baseline">
             <label className="text-base font-medium text-foreground">
               Priority
-              <span className="ml-1 text-sm text-foreground-secondary font-normal">(Optional, 1-5)</span>
+              <span className="ml-1 text-sm text-foreground-secondary font-normal">(Optional, 1-3)</span>
             </label>
             {errors.priority && (
               <p className="text-sm text-error">{errors.priority.message}</p>
@@ -206,7 +206,7 @@ export function GiftForm({ gift, onSubmit, onCancel }: GiftFormProps) {
             })}
             type="number"
             min="1"
-            max="5"
+            max="3"
             className={cn(
               "w-full px-4 py-2.5 rounded-lg text-base",
               "bg-background/50 backdrop-blur-sm",
@@ -216,7 +216,7 @@ export function GiftForm({ gift, onSubmit, onCancel }: GiftFormProps) {
               "placeholder:text-foreground-secondary/50",
               errors.priority && "border-error/50 focus:ring-error/50"
             )}
-            placeholder="Enter priority (1-5)"
+            placeholder="Enter priority (1-3)"
           />
         </div>
 

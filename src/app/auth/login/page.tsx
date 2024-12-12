@@ -1,12 +1,13 @@
+'use client'
+
 import { AuthForm } from '~/components/auth/AuthForm'
 import { Text } from '~/components/ui/Text'
+import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: { error?: string; error_description?: string }
-}) {
-  const { error, error_description } = searchParams
+export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+  const error_description = searchParams.get('error_description')
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

@@ -1,6 +1,7 @@
 import { createClient } from '~/lib/supabase/client'
 import { generateSlug } from './slug'
 import { useAuth } from '~/contexts/auth'
+import { GiftStatus } from '~/lib/supabase/types'
 
 const DEMO_GROUPS = [
   {
@@ -44,6 +45,10 @@ const getRandomTags = () => {
 
 const getRandomPriority = () => {
   return Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 1 : undefined
+}
+
+const getRandomStatus = (): GiftStatus => {
+  return Math.random() > 0.7 ? 'purchased' : 'planned'
 }
 
 export async function generateDemoData() {
@@ -105,7 +110,7 @@ export async function generateDemoData() {
             name: giftName,
             description: `A thoughtful gift for ${memberData.name}`,
             cost: getRandomCost(),
-            status: Math.random() > 0.7 ? 'purchased' : 'planned',
+            status: getRandomStatus(),
             tags: getRandomTags(),
             priority: getRandomPriority()
           }))

@@ -45,8 +45,7 @@ export default function MemberPage() {
     createGift,
     updateGift,
     deleteGift,
-    updateGiftStatus,
-  } = useGifts({ memberId: member?.id });
+  } = useGifts(member?.id);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type, isVisible: true });
@@ -117,7 +116,7 @@ export default function MemberPage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await updateGiftStatus(gift.id, status);
+      await updateGift(gift.id, { status });
       await new Promise(resolve => setTimeout(resolve, 100));
       showToast(`Gift marked as ${status}`, "success");
     } catch (error) {

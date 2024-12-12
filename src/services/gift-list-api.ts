@@ -34,6 +34,16 @@ interface GroupWithGifts extends DbGroup {
   }>;
 }
 
+// Helper function to transform database group to application group
+const transformGroup = (dbGroup: DbGroup): Group => ({
+  id: dbGroup.id,
+  name: dbGroup.name,
+  slug: dbGroup.slug,
+  budget: dbGroup.budget || undefined,
+  createdAt: dbGroup.created_at,
+  updatedAt: dbGroup.updated_at
+})
+
 // Helper function to get price range breakdown
 const getPriceRangeBreakdown = (giftsToAnalyze: DbGift[]) => {
   const ranges: PriceRange[] = [
@@ -89,10 +99,13 @@ export const giftListApi = {
 
   async updateBudgetPreferences(preferences: BudgetPreference): Promise<{ success: boolean }> {
     const supabase = createClient()
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user?.id) throw new Error('User not found')
+
     const { error } = await supabase
       .from('profiles')
       .update({ budget_preferences: preferences })
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .eq('id', user.id)
 
     if (error) throw error
     return { success: true }
@@ -107,7 +120,7 @@ export const giftListApi = {
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return { success: true, data }
+    return { success: true, data: data.map(transformGroup) }
   },
 
   async getGroup(idOrSlug: string): Promise<GroupResponse> {
@@ -120,14 +133,18 @@ export const giftListApi = {
 
     if (error) throw error
     if (!data) throw new Error("Group not found")
-    return { success: true, data }
+    return { success: true, data: transformGroup(data) }
   },
 
   async createGroup(data: Omit<Group, "id" | "createdAt" | "updatedAt">): Promise<GroupResponse> {
     const supabase = createClient()
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user?.id) throw new Error('User not found')
+
     const { data: newGroup, error } = await supabase
       .from('groups')
       .insert({
+        user_id: user.id,
         name: data.name,
         slug: data.slug || generateSlug(data.name),
         budget: data.budget
@@ -136,7 +153,7 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: newGroup }
+    return { success: true, data: transformGroup(newGroup) }
   },
 
   async updateGroup(
@@ -156,7 +173,7 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: updatedGroup }
+    return { success: true, data: transformGroup(updatedGroup) }
   },
 
   async deleteGroup(idOrSlug: string): Promise<{ success: boolean }> {
@@ -180,7 +197,14 @@ export const giftListApi = {
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return { success: true, data }
+    return { success: true, data: data.map(member => ({
+      id: member.id,
+      groupId: member.group_id,
+      name: member.name,
+      slug: member.slug,
+      createdAt: member.created_at,
+      updatedAt: member.updated_at
+    })) }
   },
 
   async getMember(idOrSlug: string): Promise<MemberResponse> {
@@ -193,7 +217,14 @@ export const giftListApi = {
 
     if (error) throw error
     if (!data) throw new Error("Member not found")
-    return { success: true, data }
+    return { success: true, data: {
+      id: data.id,
+      groupId: data.group_id,
+      name: data.name,
+      slug: data.slug,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    }}
   },
 
   async createMember(
@@ -211,7 +242,14 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: newMember }
+    return { success: true, data: {
+      id: newMember.id,
+      groupId: newMember.group_id,
+      name: newMember.name,
+      slug: newMember.slug,
+      createdAt: newMember.created_at,
+      updatedAt: newMember.updated_at
+    }}
   },
 
   async updateMember(
@@ -230,7 +268,14 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: updatedMember }
+    return { success: true, data: {
+      id: updatedMember.id,
+      groupId: updatedMember.group_id,
+      name: updatedMember.name,
+      slug: updatedMember.slug,
+      createdAt: updatedMember.created_at,
+      updatedAt: updatedMember.updated_at
+    }}
   },
 
   async deleteMember(idOrSlug: string): Promise<{ success: boolean }> {
@@ -258,7 +303,18 @@ export const giftListApi = {
 
     const { data, error } = await query
     if (error) throw error
-    return { success: true, data }
+    return { success: true, data: data.map(gift => ({
+      id: gift.id,
+      memberId: gift.member_id,
+      name: gift.name,
+      notes: gift.description || undefined,
+      cost: gift.cost,
+      status: gift.status,
+      tags: gift.tags || [],
+      priority: gift.priority || undefined,
+      createdAt: gift.created_at,
+      updatedAt: gift.updated_at
+    })) }
   },
 
   async getGift(id: string): Promise<GiftResponse> {
@@ -271,7 +327,18 @@ export const giftListApi = {
 
     if (error) throw error
     if (!data) throw new Error("Gift not found")
-    return { success: true, data }
+    return { success: true, data: {
+      id: data.id,
+      memberId: data.member_id,
+      name: data.name,
+      notes: data.description || undefined,
+      cost: data.cost,
+      status: data.status,
+      tags: data.tags || [],
+      priority: data.priority || undefined,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    }}
   },
 
   async createGift(data: Omit<Gift, "id" | "createdAt" | "updatedAt">): Promise<GiftResponse> {
@@ -291,7 +358,18 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: newGift }
+    return { success: true, data: {
+      id: newGift.id,
+      memberId: newGift.member_id,
+      name: newGift.name,
+      notes: newGift.description || undefined,
+      cost: newGift.cost,
+      status: newGift.status,
+      tags: newGift.tags || [],
+      priority: newGift.priority || undefined,
+      createdAt: newGift.created_at,
+      updatedAt: newGift.updated_at
+    }}
   },
 
   async updateGift(
@@ -314,7 +392,18 @@ export const giftListApi = {
       .single()
 
     if (error) throw error
-    return { success: true, data: updatedGift }
+    return { success: true, data: {
+      id: updatedGift.id,
+      memberId: updatedGift.member_id,
+      name: updatedGift.name,
+      notes: updatedGift.description || undefined,
+      cost: updatedGift.cost,
+      status: updatedGift.status,
+      tags: updatedGift.tags || [],
+      priority: updatedGift.priority || undefined,
+      createdAt: updatedGift.created_at,
+      updatedAt: updatedGift.updated_at
+    }}
   },
 
   async deleteGift(id: string): Promise<{ success: boolean }> {
