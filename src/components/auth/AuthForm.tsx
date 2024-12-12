@@ -201,7 +201,7 @@ export function AuthForm({ mode: initialMode = 'signin' }: { mode?: AuthMode }) 
               Forgot password?
             </button>
             <Text className="text-sm text-foreground/60">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
                 onClick={() => setMode('signup')}
