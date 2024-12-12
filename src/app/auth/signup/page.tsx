@@ -10,7 +10,7 @@ export default function SignUpPage() {
   const error_description = searchParams.get('error_description')
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         {error && (
           <div className="p-4 rounded-xl border-2 border-destructive/20 bg-destructive/5">
