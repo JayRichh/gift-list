@@ -81,9 +81,7 @@ const animations = {
   }
 };
 
-function UserProfile({ user, onSignOut }: { user: any; onSignOut: () => void }) {
-  const router = useRouter();
-
+function UserProfile({ user, onSignOut, onNavigate }: { user: any; onSignOut: () => void; onNavigate: (path: string) => void }) {
   return (
     <motion.div
       variants={animations.item}
@@ -98,7 +96,7 @@ function UserProfile({ user, onSignOut }: { user: any; onSignOut: () => void }) 
           <div className="grid gap-2">
             <Button
               variant="outline"
-              onClick={() => router.push('/profile')}
+              onClick={() => onNavigate('/profile')}
               className="w-full flex items-center gap-2"
             >
               <Settings className="h-4 w-4" />
@@ -469,9 +467,9 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
               className="flex-1 overflow-y-auto overscroll-contain"
             >
               <div className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
-                  <div className="space-y-8">
-                    {user && <UserProfile user={user} onSignOut={handleSignOut} />}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
+                <div className="space-y-8">
+                    {user && <UserProfile user={user} onSignOut={handleSignOut} onNavigate={handleNavigation} />}
 
                     {!hasCompletedSetup && (
                       <motion.div
