@@ -6,6 +6,7 @@ import type { GiftStatus } from '../lib/supabase/types'
 const DEMO_GROUPS = [
   {
     name: "Family",
+    description: "Keep track of gifts for immediate family members",
     members: [
       { name: "Mom", gifts: ["Cookbook", "Scarf", "Photo Album"] },
       { name: "Dad", gifts: ["Tool Set", "Golf Clubs", "Watch"] },
@@ -14,6 +15,7 @@ const DEMO_GROUPS = [
   },
   {
     name: "Friends",
+    description: "Gift ideas for close friends",
     members: [
       { name: "Alex", gifts: ["Board Game", "Coffee Maker", "Backpack"] },
       { name: "Sarah", gifts: ["Plant Stand", "Yoga Mat", "Tea Set"] },
@@ -82,6 +84,7 @@ export async function generateDemoData() {
           .insert({
             user_id: user.id,
             name: groupData.name,
+            description: groupData.description,
             slug: generateSlug(groupData.name),
             budget: 1000
           })

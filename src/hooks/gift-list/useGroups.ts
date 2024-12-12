@@ -32,6 +32,7 @@ export function useGroups() {
           id: group.id,
           name: group.name,
           slug: group.slug,
+          description: group.description || undefined,
           budget: group.budget || 0,
           createdAt: group.created_at,
           updatedAt: group.updated_at
@@ -76,6 +77,7 @@ export function useGroups() {
         .insert({
           name: data.name,
           slug: data.slug,
+          description: data.description,
           budget: data.budget,
           user_id: user.id
         })
@@ -88,6 +90,7 @@ export function useGroups() {
         id: newGroup.id,
         name: newGroup.name,
         slug: newGroup.slug,
+        description: newGroup.description || undefined,
         budget: newGroup.budget || 0,
         createdAt: newGroup.created_at,
         updatedAt: newGroup.updated_at
@@ -107,6 +110,7 @@ export function useGroups() {
         .update({
           name: data.name,
           slug: data.slug,
+          description: data.description,
           budget: data.budget
         })
         .eq('id', id)
@@ -119,6 +123,7 @@ export function useGroups() {
         id: updatedGroup.id,
         name: updatedGroup.name,
         slug: updatedGroup.slug,
+        description: updatedGroup.description || undefined,
         budget: updatedGroup.budget || 0,
         createdAt: updatedGroup.created_at,
         updatedAt: updatedGroup.updated_at

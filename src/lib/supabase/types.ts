@@ -61,6 +61,7 @@ export interface Database {
           user_id: string
           name: string
           slug: string
+          description: string | null
           budget: number | null
           created_at: string
           updated_at: string
@@ -70,6 +71,7 @@ export interface Database {
           user_id: string
           name: string
           slug: string
+          description?: string | null
           budget?: number | null
           created_at?: string
           updated_at?: string
@@ -79,6 +81,7 @@ export interface Database {
           user_id?: string
           name?: string
           slug?: string
+          description?: string | null
           budget?: number | null
           created_at?: string
           updated_at?: string
