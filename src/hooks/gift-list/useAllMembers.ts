@@ -1,51 +1,88 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import type { Member } from "~/types/gift-list";
-import { giftListApi } from "~/services/gift-list-api";
+'use client'
 
-// This hook gets all members across all groups
+import { useEffect, useState } from 'react'
+import { createClient } from '~/lib/supabase/client'
+import type { Member } from '~/types/gift-list'
+import { useAuth } from '~/contexts/auth'
+
 export function useAllMembers() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const isInitialMount = useRef(true);
-
-  const fetchAllMembers = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Get all groups first
-      const groupsResponse = await giftListApi.getGroups();
-      
-      // Then get members for each group
-      const allMembersPromises = groupsResponse.data.map(group => 
-        giftListApi.getMembers(group.id)
-      );
-      
-      const membersResponses = await Promise.all(allMembersPromises);
-      
-      // Combine all members
-      const allMembers = membersResponses.flatMap(response => response.data);
-      
-      setMembers(allMembers);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch members'));
-      setMembers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [members, setMembers] = useState<Member[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const supabase = createClient()
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      fetchAllMembers();
-      isInitialMount.current = false;
+    if (!user) {
+      setMembers([])
+      setLoading(false)
+      return
     }
-  }, [fetchAllMembers]);
+
+    const fetchMembers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('members')
+          .select(`
+            *,
+            groups!inner(*)
+          `)
+          .eq('groups.user_id', user.id)
+          .order('name', { ascending: true })
+
+        if (error) throw error
+
+        setMembers(data.map(member => ({
+          id: member.id,
+          groupId: member.group_id,
+          name: member.name,
+          slug: member.slug,
+          createdAt: member.created_at,
+          updatedAt: member.updated_at
+        })))
+      } catch (err) {
+        console.error('Error fetching all members:', err)
+        setError('Failed to load members')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMembers()
+
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('all_members_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'members'
+        }, 
+        () => {
+          fetchMembers()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user])
+
+  const getMemberById = (id: string) => {
+    return members.find(member => member.id === id)
+  }
+
+  const getMembersByGroupId = (groupId: string) => {
+    return members.filter(member => member.groupId === groupId)
+  }
 
   return {
     members,
     loading,
     error,
-    refetch: fetchAllMembers
-  };
+    getMemberById,
+    getMembersByGroupId
+  }
 }

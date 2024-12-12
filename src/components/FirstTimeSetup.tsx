@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign } from "lucide-react";
+import { DollarSign, LogIn } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Text } from "./ui/Text";
 import { cn } from "~/utils/cn";
 import type { BudgetPreference } from "~/types/gift-list";
 import { generateDemoData } from "~/utils/demo-data";
+import { useAuth } from "~/contexts/auth";
+import { giftListApi } from "~/services/gift-list-api";
+import Link from "next/link";
 
 interface FirstTimeSetupProps {
   isOpen: boolean;
@@ -24,9 +27,6 @@ const QUICK_BUDGETS = [
 const STORAGE_KEYS = {
   SETUP_COMPLETED: 'hasCompletedSetup',
   BUDGET_PREFERENCES: 'budgetPreferences',
-  GROUPS: 'gift-list-groups',
-  MEMBERS: 'gift-list-members',
-  GIFTS: 'gift-list-gifts'
 };
 
 export function FirstTimeSetup({ isOpen, onComplete, onClose }: FirstTimeSetupProps) {
@@ -34,38 +34,67 @@ export function FirstTimeSetup({ isOpen, onComplete, onClose }: FirstTimeSetupPr
   const [trackingLevel, setTrackingLevel] = useState<BudgetPreference["trackingLevel"]>("both");
   const [enableAnalytics, setEnableAnalytics] = useState(true);
   const [isGeneratingDemo, setIsGeneratingDemo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Clear any existing data first
-    Object.values(STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
-    
-    // Generate demo data
+    if (!user) return;
+
+    setError(null);
     setIsGeneratingDemo(true);
-    await generateDemoData();
-    setIsGeneratingDemo(false);
 
-    // Complete setup with preferences
-    const preferences: BudgetPreference = {
-      defaultBudget: defaultBudget ? parseFloat(defaultBudget) : undefined,
-      trackingLevel,
-      enableAnalytics,
-      priceRanges: [
-        { min: 0, max: 50, label: "Budget" },
-        { min: 50, max: 150, label: "Moderate" },
-        { min: 150, max: 99999, label: "Premium" },
-      ],
-    };
+    try {
+      // Generate and store demo data in Supabase if no data exists
+      await generateDemoData();
 
-    // Save preferences
-    localStorage.setItem(STORAGE_KEYS.BUDGET_PREFERENCES, JSON.stringify(preferences));
-    localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+      // Save preferences to Supabase
+      const preferences: BudgetPreference = {
+        defaultBudget: defaultBudget ? parseFloat(defaultBudget) : undefined,
+        trackingLevel,
+        enableAnalytics,
+        priceRanges: [
+          { min: 0, max: 50, label: "Budget" },
+          { min: 50, max: 150, label: "Moderate" },
+          { min: 150, max: 99999, label: "Premium" },
+        ],
+      };
 
-    onComplete(preferences);
+      await giftListApi.updateBudgetPreferences(preferences);
+
+      // Mark setup as completed
+      localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+      localStorage.setItem(STORAGE_KEYS.BUDGET_PREFERENCES, JSON.stringify(preferences));
+      
+      onComplete(preferences);
+
+    } catch (err) {
+      console.error('Setup error:', err);
+      setError('Failed to complete setup. Please try again.');
+    } finally {
+      setIsGeneratingDemo(false);
+    }
   };
+
+  if (!user) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="Sign In Required" className="max-w-md">
+        <div className="space-y-6 py-4">
+          <Text className="text-center text-foreground/60">
+            Please sign in to complete setup and start using Gift List.
+          </Text>
+          <div className="flex justify-center">
+            <Link href="/auth/login">
+              <Button variant="primary" className="flex items-center gap-2">
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Welcome to Gift List!" className="max-w-2xl">
@@ -177,6 +206,12 @@ export function FirstTimeSetup({ isOpen, onComplete, onClose }: FirstTimeSetupPr
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-xl border-2 border-destructive/20 bg-destructive/5">
+            <Text className="text-sm text-destructive">{error}</Text>
+          </div>
+        )}
 
         <div className="flex justify-between pt-6 border-t border-border/50">
           <Button

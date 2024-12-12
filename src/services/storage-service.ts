@@ -3,7 +3,6 @@ interface StorageProvider {
   setItem: (key: string, value: string) => Promise<void>;
   removeItem: (key: string) => Promise<void>;
   isChromeSync: () => boolean;
-  migrateData?: () => Promise<void>;
 }
 
 interface ChromeStorageSync {
@@ -27,7 +26,6 @@ declare global {
   }
 }
 
-const MIGRATION_KEY = 'gift-list-storage-migrated';
 const STORAGE_KEYS = [
   'gift-list-groups',
   'gift-list-members',

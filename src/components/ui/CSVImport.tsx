@@ -38,7 +38,7 @@ const fieldVariations = {
 };
 
 interface CSVImportProps {
-  onImport: (data: { groups: Group[], members: Member[], gifts: Gift[] }) => void;
+  onImport: (data: { groups: any[], members: any[], gifts: any[] }) => void;
 }
 
 export function CSVImport({ onImport }: CSVImportProps) {
@@ -138,19 +138,19 @@ export function CSVImport({ onImport }: CSVImportProps) {
     try {
       const timestamp = new Date().toISOString();
       const importedData = {
-        groups: [] as Group[],
-        members: [] as Member[],
-        gifts: [] as Gift[]
+        groups: [] as any[],
+        members: [] as any[],
+        gifts: [] as any[]
       };
 
       // Create a default group
-      const defaultGroup: Group = {
+      const defaultGroup = {
         id: crypto.randomUUID(),
         slug: "imported-gifts",
         name: "Imported Gifts",
         description: "Imported from CSV on " + new Date().toLocaleDateString(),
-        createdAt: timestamp,
-        updatedAt: timestamp
+        created_at: timestamp,
+        updated_at: timestamp
       };
       importedData.groups.push(defaultGroup);
 
@@ -172,15 +172,15 @@ export function CSVImport({ onImport }: CSVImportProps) {
       });
 
       memberTotals.forEach((totals, recipientName) => {
-        const member: Member = {
+        const member = {
           id: crypto.randomUUID(),
           slug: generateSlug(recipientName),
-          groupId: defaultGroup.id,
+          group_id: defaultGroup.id,
           name: recipientName,
           budget: totals.budget || undefined,
           notes: `Total Gifts: ${totals.count}\nTotal Spent: $${totals.spent.toFixed(2)}`,
-          createdAt: timestamp,
-          updatedAt: timestamp
+          created_at: timestamp,
+          updated_at: timestamp
         };
         importedData.members.push(member);
       });
@@ -204,16 +204,16 @@ export function CSVImport({ onImport }: CSVImportProps) {
             row[mapping.notes] && row[mapping.notes]
           ].filter(Boolean).join("\n");
 
-          const gift: Gift = {
+          const gift = {
             id: crypto.randomUUID(),
-            memberId: member.id,
+            member_id: member.id,
             name: giftName,
             cost: parseFloat(row[mapping.cost]) || 0,
             status: mapStatus(row),
             notes: notes || undefined,
             priority: parseInt(row[mapping.priority]) || undefined,
-            createdAt: timestamp,
-            updatedAt: timestamp
+            created_at: timestamp,
+            updated_at: timestamp
           };
           importedData.gifts.push(gift);
         }

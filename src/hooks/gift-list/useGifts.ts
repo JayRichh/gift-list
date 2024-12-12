@@ -1,133 +1,187 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import type { 
-  Gift, 
-  GiftsResponse, 
-  BudgetAnalytics, 
-  GiftAnalytics,
-  BudgetAnalyticsResponse,
-  GiftAnalyticsResponse
-} from "~/types/gift-list";
-import { giftListApi } from "~/services/gift-list-api";
-import { useAsync } from "~/hooks/useAsync";
+'use client'
 
-interface UseGiftsOptions {
-  memberId?: string;
-}
+import { useEffect, useState } from 'react'
+import { createClient } from '~/lib/supabase/client'
+import type { Gift, GiftStatus } from '~/types/gift-list'
+import { useAuth } from '~/contexts/auth'
 
-export function useGifts(options: UseGiftsOptions = {}) {
-  const [gifts, setGifts] = useState<Gift[]>([]);
-  const isInitialMount = useRef(true);
-  const previousMemberId = useRef(options.memberId);
+export function useGifts(memberId?: string) {
+  const [gifts, setGifts] = useState<Gift[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const supabase = createClient()
 
-  const { loading, error, execute } = useAsync<GiftsResponse>();
-
-  const fetchGifts = useCallback(async () => {
-    try {
-      const response = await execute(() => giftListApi.getGifts(options.memberId));
-      if (response) {
-        setGifts(response.data);
-      }
-    } catch (error) {
-      // If there's an error, set gifts to empty array
-      setGifts([]);
-    }
-  }, [execute, options.memberId]);
-
-  const createGift = useCallback(async (data: Omit<Gift, "id" | "createdAt" | "updatedAt">) => {
-    if (!data.memberId) throw new Error("Member ID is required");
-    
-    const response = await giftListApi.createGift(data);
-    // Instead of updating state directly, fetch fresh data
-    await fetchGifts();
-    return response.data;
-  }, [fetchGifts]);
-
-  const updateGift = useCallback(async (
-    id: string,
-    data: Partial<Omit<Gift, "id" | "memberId" | "createdAt" | "updatedAt">>
-  ) => {
-    const response = await giftListApi.updateGift(id, data);
-    // Instead of updating state directly, fetch fresh data
-    await fetchGifts();
-    return response.data;
-  }, [fetchGifts]);
-
-  const deleteGift = useCallback(async (id: string) => {
-    await giftListApi.deleteGift(id);
-    // Instead of updating state directly, fetch fresh data
-    await fetchGifts();
-  }, [fetchGifts]);
-
-  // Helper function to update gift status
-  const updateGiftStatus = useCallback(async (id: string, status: Gift["status"]) => {
-    return updateGift(id, { status });
-  }, [updateGift]);
-
-  // Helper function to update gift tags
-  const updateGiftTags = useCallback(async (id: string, tags: string[]) => {
-    return updateGift(id, { tags });
-  }, [updateGift]);
-
-  // Fetch gifts when options change or on initial mount
   useEffect(() => {
-    if (isInitialMount.current || options.memberId !== previousMemberId.current) {
-      fetchGifts();
-      isInitialMount.current = false;
-      previousMemberId.current = options.memberId;
+    if (!user) {
+      setGifts([])
+      setLoading(false)
+      return
     }
-  }, [options.memberId, fetchGifts]);
+
+    const fetchGifts = async () => {
+      try {
+        let query = supabase
+          .from('gifts')
+          .select(`
+            *,
+            members!inner(
+              *,
+              groups!inner(*)
+            )
+          `)
+          .eq('members.groups.user_id', user.id)
+          .order('created_at', { ascending: true })
+
+        if (memberId) {
+          query = query.eq('member_id', memberId)
+        }
+
+        const { data, error } = await query
+
+        if (error) throw error
+
+        setGifts(data.map(gift => ({
+          id: gift.id,
+          memberId: gift.member_id,
+          name: gift.name,
+          notes: gift.description,
+          cost: gift.cost,
+          status: gift.status as GiftStatus,
+          tags: gift.tags || [],
+          priority: gift.priority || undefined,
+          createdAt: gift.created_at,
+          updatedAt: gift.updated_at
+        })))
+      } catch (err) {
+        console.error('Error fetching gifts:', err)
+        setError('Failed to load gifts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGifts()
+
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('gifts_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'gifts',
+          filter: memberId ? `member_id=eq.${memberId}` : undefined
+        }, 
+        () => {
+          fetchGifts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user, memberId])
+
+  const createGift = async (data: Omit<Gift, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) throw new Error('Must be logged in to create gifts')
+
+    try {
+      const { data: newGift, error } = await supabase
+        .from('gifts')
+        .insert({
+          member_id: data.memberId,
+          name: data.name,
+          description: data.notes,
+          cost: data.cost,
+          status: data.status,
+          tags: data.tags,
+          priority: data.priority
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return {
+        id: newGift.id,
+        memberId: newGift.member_id,
+        name: newGift.name,
+        notes: newGift.description,
+        cost: newGift.cost,
+        status: newGift.status as GiftStatus,
+        tags: newGift.tags || [],
+        priority: newGift.priority || undefined,
+        createdAt: newGift.created_at,
+        updatedAt: newGift.updated_at
+      }
+    } catch (err) {
+      console.error('Error creating gift:', err)
+      throw new Error('Failed to create gift')
+    }
+  }
+
+  const updateGift = async (id: string, data: Partial<Omit<Gift, 'id' | 'memberId' | 'createdAt' | 'updatedAt'>>) => {
+    if (!user) throw new Error('Must be logged in to update gifts')
+
+    try {
+      const { data: updatedGift, error } = await supabase
+        .from('gifts')
+        .update({
+          name: data.name,
+          description: data.notes,
+          cost: data.cost,
+          status: data.status,
+          tags: data.tags,
+          priority: data.priority
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return {
+        id: updatedGift.id,
+        memberId: updatedGift.member_id,
+        name: updatedGift.name,
+        notes: updatedGift.description,
+        cost: updatedGift.cost,
+        status: updatedGift.status as GiftStatus,
+        tags: updatedGift.tags || [],
+        priority: updatedGift.priority || undefined,
+        createdAt: updatedGift.created_at,
+        updatedAt: updatedGift.updated_at
+      }
+    } catch (err) {
+      console.error('Error updating gift:', err)
+      throw new Error('Failed to update gift')
+    }
+  }
+
+  const deleteGift = async (id: string) => {
+    if (!user) throw new Error('Must be logged in to delete gifts')
+
+    try {
+      const { error } = await supabase
+        .from('gifts')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (err) {
+      console.error('Error deleting gift:', err)
+      throw new Error('Failed to delete gift')
+    }
+  }
 
   return {
     gifts,
     loading,
     error,
-    fetchGifts,
     createGift,
     updateGift,
-    deleteGift,
-    updateGiftStatus,
-    updateGiftTags,
-  };
-}
-
-// Export a hook for analytics
-export function useGiftAnalytics() {
-  const [budgetAnalytics, setBudgetAnalytics] = useState<BudgetAnalytics | null>(null);
-  const [giftAnalytics, setGiftAnalytics] = useState<GiftAnalytics | null>(null);
-  const isInitialMount = useRef(true);
-
-  const { loading: budgetLoading, error: budgetError, execute: executeBudget } = useAsync<BudgetAnalyticsResponse>();
-  const { loading: giftLoading, error: giftError, execute: executeGift } = useAsync<GiftAnalyticsResponse>();
-
-  const fetchAnalytics = useCallback(async () => {
-    try {
-      const [budgetResponse, giftResponse] = await Promise.all([
-        executeBudget(() => giftListApi.getBudgetAnalytics()),
-        executeGift(() => giftListApi.getGiftAnalytics()),
-      ]);
-
-      if (budgetResponse) setBudgetAnalytics(budgetResponse.data);
-      if (giftResponse) setGiftAnalytics(giftResponse.data);
-    } catch (error) {
-      // If there's an error, set analytics to null
-      setBudgetAnalytics(null);
-      setGiftAnalytics(null);
-    }
-  }, [executeBudget, executeGift]);
-
-  // Fetch analytics only on initial mount
-  useEffect(() => {
-    if (isInitialMount.current) {
-      fetchAnalytics();
-      isInitialMount.current = false;
-    }
-  }, [fetchAnalytics]);
-
-  return {
-    budgetAnalytics,
-    giftAnalytics,
-    loading: budgetLoading || giftLoading,
-    error: budgetError || giftError,
-    refetch: fetchAnalytics,
-  };
+    deleteGift
+  }
 }

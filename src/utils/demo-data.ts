@@ -1,68 +1,136 @@
-import type { Group, Member, Gift, GiftStatus } from "~/types/gift-list";
-import { giftListApi } from "~/services/gift-list-api";
-import { generateSlug } from "./slug";
+import { createClient } from '~/lib/supabase/client'
+import { generateSlug } from './slug'
+import { useAuth } from '~/contexts/auth'
 
-// Minimal set of demo gifts covering different price ranges and statuses
-const DEMO_GIFTS: Array<{
-  name: string;
-  cost: number;
-  tags: string[];
-  status: GiftStatus;
-  priority: number;
-  notes: string;
-}> = [
-  { 
-    name: "Smart Watch", 
-    cost: 199.99, 
-    tags: ["electronics"],
-    status: "purchased" as GiftStatus,
-    priority: 1,
-    notes: "Anniversary gift idea"
+const DEMO_GROUPS = [
+  {
+    name: "Family",
+    members: [
+      { name: "Mom", gifts: ["Cookbook", "Scarf", "Photo Album"] },
+      { name: "Dad", gifts: ["Tool Set", "Golf Clubs", "Watch"] },
+      { name: "Sister", gifts: ["Headphones", "Jewelry Box", "Art Supplies"] }
+    ]
   },
-  { 
-    name: "Coffee Gift Set", 
-    cost: 45.99, 
-    tags: ["kitchen"],
-    status: "planned" as GiftStatus,
-    priority: 2,
-    notes: "They mentioned needing new coffee gear"
+  {
+    name: "Friends",
+    members: [
+      { name: "Alex", gifts: ["Board Game", "Coffee Maker", "Backpack"] },
+      { name: "Sarah", gifts: ["Plant Stand", "Yoga Mat", "Tea Set"] },
+      { name: "Mike", gifts: ["Video Game", "Bluetooth Speaker", "Wallet"] }
+    ]
   }
-];
+]
+
+const GIFT_COSTS = {
+  min: 20,
+  max: 200
+}
+
+const GIFT_TAGS = [
+  "Birthday", "Holiday", "Special Occasion",
+  "Practical", "Fun", "Luxury",
+  "Handmade", "Experience", "Tech"
+]
+
+const getRandomCost = () => {
+  return Math.floor(Math.random() * (GIFT_COSTS.max - GIFT_COSTS.min + 1)) + GIFT_COSTS.min
+}
+
+const getRandomTags = () => {
+  const numTags = Math.floor(Math.random() * 3) + 1
+  const shuffled = [...GIFT_TAGS].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, numTags)
+}
+
+const getRandomPriority = () => {
+  return Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 1 : undefined
+}
 
 export async function generateDemoData() {
+  const supabase = createClient()
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User must be logged in to generate demo data')
+
   try {
-    // Create a single group
-    const groupName = "Family";
-    const group = await giftListApi.createGroup({
-      name: groupName,
-      slug: generateSlug(groupName),
-      description: "Close family members",
-      budget: 500,
-      trackingLevel: "both"
-    });
+    // Check if user already has groups
+    const { data: existingGroups } = await supabase
+      .from('groups')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
 
-    // Create a couple as members
-    const memberName = "John & Sarah";
-    const couple = await giftListApi.createMember({
-      groupId: group.data.id,
-      name: memberName,
-      slug: generateSlug(memberName),
-      budget: 300,
-      notes: "Anniversary in June",
-      tags: ["couple", "family"]
-    });
-
-    // Add demo gifts for the couple
-    for (const gift of DEMO_GIFTS) {
-      await giftListApi.createGift({
-        ...gift,
-        memberId: couple.data.id
-      });
+    if (existingGroups && existingGroups.length > 0) {
+      console.log('User already has groups, skipping demo data generation')
+      return true
     }
 
-    return true;
+    console.log('Generating demo data for new user...')
+
+    // Generate demo data
+    for (const groupData of DEMO_GROUPS) {
+      try {
+        // Create group
+        const { data: group, error: groupError } = await supabase
+          .from('groups')
+          .insert({
+            user_id: user.id,
+            name: groupData.name,
+            slug: generateSlug(groupData.name),
+            budget: 1000
+          })
+          .select()
+          .single()
+
+        if (groupError) throw groupError
+
+        // Create members and their gifts
+        for (const memberData of groupData.members) {
+          const { data: member, error: memberError } = await supabase
+            .from('members')
+            .insert({
+              group_id: group.id,
+              name: memberData.name,
+              slug: generateSlug(memberData.name)
+            })
+            .select()
+            .single()
+
+          if (memberError) throw memberError
+
+          // Create gifts for member
+          const gifts = memberData.gifts.map(giftName => ({
+            member_id: member.id,
+            name: giftName,
+            description: `A thoughtful gift for ${memberData.name}`,
+            cost: getRandomCost(),
+            status: Math.random() > 0.7 ? 'purchased' : 'planned',
+            tags: getRandomTags(),
+            priority: getRandomPriority()
+          }))
+
+          const { error: giftsError } = await supabase
+            .from('gifts')
+            .insert(gifts)
+
+          if (giftsError) {
+            console.error(`Error creating gifts for ${memberData.name}:`, giftsError)
+            // Continue with next member even if gifts fail
+            continue
+          }
+        }
+      } catch (groupError) {
+        console.error(`Error creating group ${groupData.name}:`, groupError)
+        // Continue with next group even if one fails
+        continue
+      }
+    }
+
+    console.log('Demo data generation completed')
+    return true
   } catch (error) {
-    console.error("Error generating demo data:", error);
-    return false;
+    console.error('Error generating demo data:', error)
+    throw error
   }
 }

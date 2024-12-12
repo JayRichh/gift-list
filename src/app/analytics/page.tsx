@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useGiftAnalytics } from "~/hooks/gift-list";
+import { useAnalytics } from "~/hooks/gift-list";
 import { Container } from "~/components/ui/Container";
 import { Text } from "~/components/ui/Text";
 import { Spinner } from "~/components/ui/Spinner";
@@ -14,7 +14,7 @@ export default function AnalyticsPage() {
     giftAnalytics,
     loading,
     error,
-  } = useGiftAnalytics();
+  } = useAnalytics();
 
   if (loading) {
     return (
