@@ -59,7 +59,7 @@ export function AuthForm({ mode: initialMode = 'signin' }: { mode?: AuthMode }) 
         provider,
         options: {
           // Use Supabase's default callback URL for OAuth
-          redirectTo: undefined,
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
           queryParams: {
             // Add any additional OAuth scopes if needed
             access_type: 'offline',

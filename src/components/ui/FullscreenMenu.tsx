@@ -117,7 +117,9 @@ function UserProfile({ user, onSignOut, onNavigate }: { user: any; onSignOut: ()
   );
 }
 
-function NavigationSection({ pathname, onNavigate }: { pathname: string; onNavigate: (path: string) => void }) {
+function NavigationSection({ pathname, onNavigate, isAuthenticated }: { pathname: string; onNavigate: (path: string) => void; isAuthenticated: boolean }) {
+  if (!isAuthenticated) return null;
+  
   return (
     <div className="space-y-6">
       <Text className="text-lg font-medium">Navigation</Text>
@@ -214,17 +216,31 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const { user, signOut } = useAuth();
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [isResetting, setIsResetting] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(!!user);
 
   React.useEffect(() => {
     setMounted(true);
-    const storedPrefs = localStorage.getItem(STORAGE_KEYS.BUDGET_PREFERENCES);
-    const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
-    setHasCompletedSetup(!!setupCompleted);
-    if (storedPrefs) {
-      setBudgetPrefs(JSON.parse(storedPrefs));
-    }
     return () => setMounted(false);
   }, []);
+
+  React.useEffect(() => {
+    setIsAuthenticated(!!user);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const setupCompleted = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED);
+      setHasCompletedSetup(!!setupCompleted);
+      
+      const storedPrefs = localStorage.getItem(STORAGE_KEYS.BUDGET_PREFERENCES);
+      if (storedPrefs) {
+        setBudgetPrefs(JSON.parse(storedPrefs));
+      }
+    } else {
+      setHasCompletedSetup(false);
+      setBudgetPrefs(null);
+    }
+  }, [isAuthenticated]);
 
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -336,6 +352,7 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
       setIsResetting(false);
     }
   };
+
   const handleImport = async (data: { groups: Group[], members: Member[], gifts: Gift[] }) => {
     if (!user) return;
 
@@ -467,11 +484,11 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
               className="flex-1 overflow-y-auto overscroll-contain"
             >
               <div className="max-w-7xl mx-auto px-6 py-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
-                <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
+                  <div className="space-y-8">
                     {user && <UserProfile user={user} onSignOut={handleSignOut} onNavigate={handleNavigation} />}
 
-                    {!hasCompletedSetup && (
+                    {isAuthenticated && !hasCompletedSetup && (
                       <motion.div
                         variants={animations.item}
                         initial="hidden"
@@ -495,9 +512,9 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
                       </motion.div>
                     )}
 
-                    <NavigationSection pathname={pathname} onNavigate={handleNavigation} />
+                    <NavigationSection pathname={pathname} onNavigate={handleNavigation} isAuthenticated={isAuthenticated} />
 
-                    {hasCompletedSetup && plannedGifts.length > 0 && (
+                    {isAuthenticated && hasCompletedSetup && plannedGifts.length > 0 && (
                       <div className="space-y-6">
                         <Text className="text-lg font-medium flex items-center gap-2">
                           <ShoppingCart className="h-5 w-5" />
@@ -568,11 +585,11 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
                         </div>
                       </div>
 
-                      {hasCompletedSetup && (
+                      {isAuthenticated && hasCompletedSetup && (
                         <CSVImport onImport={handleImport} />
                       )}
 
-                      {budgetPrefs && (
+                      {isAuthenticated && budgetPrefs && (
                         <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
                           <Text className="font-medium">Budget Preferences</Text>
                           <div className="space-y-4">
@@ -654,20 +671,22 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
                         </div>
                       )}
 
-                      <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
-                        <Text className="font-medium">Reset Application</Text>
-                        <Button
-                          variant="destructive"
-                          onClick={() => setShowResetConfirm(true)}
-                          className="w-full flex items-center justify-center gap-2"
-                        >
-                          <RefreshCw className="h-5 w-5" />
-                          Reset All Data
-                        </Button>
-                        <Text className="text-sm text-foreground/60">
-                          This will clear all your data and preferences, and return you to the setup screen.
-                        </Text>
-                      </div>
+                      {isAuthenticated && (
+                        <div className="p-4 rounded-xl border-2 border-border/50 bg-background/95 space-y-4">
+                          <Text className="font-medium">Reset Application</Text>
+                          <Button
+                            variant="destructive"
+                            onClick={() => setShowResetConfirm(true)}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <RefreshCw className="h-5 w-5" />
+                            Reset All Data
+                          </Button>
+                          <Text className="text-sm text-foreground/60">
+                            This will clear all your data and preferences, and return you to the setup screen.
+                          </Text>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
