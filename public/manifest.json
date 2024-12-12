@@ -2,10 +2,16 @@
   "name": "Gift List",
   "short_name": "Gift List",
   "description": "A modern app to manage and track gifts for your family and friends",
+  "version": "1.0",
+  "manifest_version": 3,
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4F46E5",
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
   "icons": [
     {
       "src": "/icon.svg",

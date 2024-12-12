@@ -1,11 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
   reactStrictMode: true,
-  webpack: (config) => {
-    config.externals = [...(config.externals || []), { canvas: "canvas" }];
-    return config;
+  experimental: {
+    turbo: {
+      resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+      moduleIdStrategy: 'deterministic',
+      rules: {
+      },
+    },
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'storage-access=self'
+          }
+        ]
+      }
+    ];
+  }
 };
 
 module.exports = nextConfig;

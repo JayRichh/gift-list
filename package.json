@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -11,32 +11,21 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
-    "@dimforge/rapier3d-compat": "^0.14.0",
     "@hookform/resolvers": "^3.9.1",
-    "@monaco-editor/react": "^4.6.0",
     "@nivo/bar": "^0.88.0",
     "@nivo/core": "^0.88.0",
     "@nivo/line": "^0.88.0",
     "@nivo/pie": "^0.88.0",
-    "@react-three/drei": "^9.117.1",
-    "@react-three/fiber": "^8.17.10",
-    "@react-three/postprocessing": "^2.16.3",
-    "@types/prismjs": "^1.26.5",
-    "@types/three": "^0.170.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
-    "monaco-editor": "^0.52.0",
     "next": "15.0.3",
     "next-themes": "^0.4.4",
-    "prismjs": "^1.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.53.2",
     "tailwind-merge": "^2.5.4",
-    "three": "^0.170.0",
-    "three-stdlib": "^2.34.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -44,7 +33,6 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/webpack": "^5.28.5",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^8",
@@ -54,7 +42,6 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.12",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5",
-    "webpack": "^5.96.1"
+    "typescript": "^5"
   }
 }
