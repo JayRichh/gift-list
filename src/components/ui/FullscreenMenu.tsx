@@ -364,7 +364,11 @@ export function FullscreenMenu({ isOpen, onClose }: { isOpen: boolean; onClose: 
         const { error: groupError } = await supabase
           .from('groups')
           .insert({
-            ...group,
+            id: group.id,
+            name: group.name,
+            slug: group.slug,
+            description: group.description,
+            budget: group.budget,
             user_id: user.id
           });
 

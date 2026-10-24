@@ -19,14 +19,14 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.47.5",
     "@vercel/analytics": "^1.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
-    "next": "15.0.7",
+    "next": "15.5.28",
     "next-themes": "^0.4.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -42,7 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^8",
-    "eslint-config-next": "15.0.3",
+    "eslint-config-next": "15.5.28",
     "eslint-plugin-react-hooks": "^5.0.0",
     "postcss": "^8",
     "prettier": "^3.2.5",
@@ -50,5 +50,8 @@
     "supabase": "^2.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
