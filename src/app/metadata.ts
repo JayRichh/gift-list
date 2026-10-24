@@ -10,6 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://gifters.vercel.app"),
+  alternates: { canonical: "/" },
   title: "Gift List - Organize Your Gift Giving",
   description: "A modern app to manage and track gifts for your family and friends",
   keywords: ["gift list", "gift tracking", "gift management", "gift organization"],
